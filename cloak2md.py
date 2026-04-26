@@ -25,7 +25,6 @@ def build_parser() -> argparse.ArgumentParser:
         description="Render a web page with CloakBrowser, then convert the HTML to Markdown.",
     )
     parser.add_argument("url", help="URL to render")
-    parser.add_argument("-o", "--output", help="Write Markdown/JSON to this file instead of stdout")
     parser.add_argument("--json", action="store_true", help="Output JSON with metadata and markdown")
     parser.add_argument("--html-output", help="Also save rendered HTML to this file")
     parser.add_argument("--timeout", type=positive_int, default=45, help="Page load timeout in seconds (default: 45)")
@@ -78,15 +77,6 @@ def extract_markdown(html: str, url: str, args: argparse.Namespace):
     )
 
 
-def write_text(path: str | None, text: str) -> None:
-    if path:
-        Path(path).write_text(text, encoding="utf-8")
-    else:
-        sys.stdout.write(text)
-        if text and not text.endswith("\n"):
-            sys.stdout.write("\n")
-
-
 def main() -> int:
     args = build_parser().parse_args()
 
@@ -113,9 +103,9 @@ def main() -> int:
         }
 
         if args.json:
-            write_text(args.output, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+            sys.stdout.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
         else:
-            write_text(args.output, markdown + "\n")
+            sys.stdout.write(markdown + "\n")
 
         print(
             f"cloak2md: title={payload['title']!r} quality={payload['quality']} chars={payload['chars']}",
