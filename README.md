@@ -1,3 +1,5 @@
+![cloak2md flow](assets/cloak2md-flow-v2.webp)
+
 # cloak2md
 
 `cloak2md` opens a page in [CloakBrowser](https://github.com/CloakHQ/CloakBrowser), extracts the rendered HTML with [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura), and prints clean Markdown.
