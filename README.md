@@ -1,4 +1,4 @@
-![cloak2md flow](assets/cloak2md-flow-v2.webp)
+![cloak2md flow](assets/cloak2md-flow.webp)
 
 # cloak2md
 
@@ -41,7 +41,7 @@ Save the Markdown:
 cloak2md https://example.com > page.md
 ```
 
-## When the default isn't enough
+## Content troubleshooting
 
 Pick the fix by symptom. Try one change at a time.
 
