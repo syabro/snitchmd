@@ -2,7 +2,7 @@
 
 # snitchmd
 
-**One command turns a web page into clean Markdown — even when `curl` fails.**
+**One command turns a web page into clean Markdown — even when `curl` fails. Passes Cloudflare/anti-bot protection.**
 
 Use `snitchmd` when:
 
