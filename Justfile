@@ -1,4 +1,5 @@
-image := "syabro/snitchmd:latest"
+version := "0.1.1"
+image := "syabro/snitchmd"
 local_image := "snitchmd:local"
 
 _default:
@@ -8,8 +9,10 @@ build:
     docker build -t {{local_image}} .
 
 push: build
-    docker tag {{local_image}} {{image}}
-    docker push {{image}}
+    docker tag {{local_image}} {{image}}:{{version}}
+    docker tag {{local_image}} {{image}}:latest
+    docker push {{image}}:{{version}}
+    docker push {{image}}:latest
 
 publish: push
 

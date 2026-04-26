@@ -26,7 +26,7 @@ Under the hood, `snitchmd` chains two existing projects so you don't have to: [C
 Add this alias to your shell config, then reload your shell:
 
 ```bash
-alias snitchmd='docker run --rm -i syabro/snitchmd'
+alias snitchmd='docker run --rm -i --pull=always syabro/snitchmd'
 ```
 
 ## Run
