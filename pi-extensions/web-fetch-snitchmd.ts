@@ -2,7 +2,7 @@ import { StringEnum, Type } from "@mariozechner/pi-ai";
 import { defineTool, type ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { execFile } from "node:child_process";
 
-const IMAGE = process.env.CLOAK2MD_IMAGE || "syabro/cloak2md:latest";
+const IMAGE = process.env.SNITCHMD_IMAGE || "syabro/snitchmd:latest";
 const DEFAULT_PAGE_TIMEOUT_SECONDS = 45;
 const DEFAULT_MAX_CHARS = 40_000;
 
@@ -22,7 +22,7 @@ type DockerResult = {
 	error?: string;
 };
 
-type Cloak2MdPayload = {
+type SnitchmdPayload = {
 	url: string;
 	final_url: string;
 	title?: string;
@@ -65,28 +65,28 @@ function runDocker(args: string[], timeoutMs: number, signal?: AbortSignal): Pro
 	});
 }
 
-function parsePayload(stdout: string): Cloak2MdPayload {
+function parsePayload(stdout: string): SnitchmdPayload {
 	try {
-		return JSON.parse(stdout) as Cloak2MdPayload;
+		return JSON.parse(stdout) as SnitchmdPayload;
 	} catch {
 		const start = stdout.indexOf("{");
 		const end = stdout.lastIndexOf("}");
 		if (start >= 0 && end > start) {
-			return JSON.parse(stdout.slice(start, end + 1)) as Cloak2MdPayload;
+			return JSON.parse(stdout.slice(start, end + 1)) as SnitchmdPayload;
 		}
-		throw new Error("cloak2md returned non-JSON output");
+		throw new Error("snitchmd returned non-JSON output");
 	}
 }
 
-const webFetchCloak2MdTool = defineTool({
-	name: "web_fetch_cloak2md",
-	label: "Web Fetch Cloak2MD",
+const webFetchSnitchmdTool = defineTool({
+	name: "web_fetch_snitchmd",
+	label: "Web Fetch Snitchmd",
 	description:
 		"Convert a web page to clean Markdown. Use when (a) the page is JS-rendered and a plain fetch returns an empty shell, (b) the site is gated by Cloudflare or other anti-bot checks, or (c) raw HTML is too noisy for the context window. Returns Markdown ready to paste into a prompt, note, or RAG pipeline. If none of those apply, a plain HTTP fetch is cheaper.",
 	promptSnippet:
-		"web_fetch_cloak2md → web page to clean Markdown when JS-rendered, anti-bot-gated, or HTML too noisy.",
+		"web_fetch_snitchmd → web page to clean Markdown when JS-rendered, anti-bot-gated, or HTML too noisy.",
 	promptGuidelines: [
-		"Pick web_fetch_cloak2md only if the page is JS-rendered, anti-bot-gated, or its raw HTML is too noisy for the context window. Otherwise use a plain HTTP fetch.",
+		"Pick web_fetch_snitchmd only if the page is JS-rendered, anti-bot-gated, or its raw HTML is too noisy for the context window. Otherwise use a plain HTTP fetch.",
 		"Always start with default extraction. Switch modes based on the symptom, not the URL.",
 		"Symptom → action: empty or stub output → wait_seconds, or wait_for_selector if the element is known; noisy output (nav, footer, cookies, related links) → extraction_mode='precision'; missing content (tables, pricing cards, docs blocks) → extraction_mode='recall'; page is huge and only the top is needed → set max_chars.",
 		"Stop after two adjustments. If you still don't have the content, the page is the wrong target for this tool — fall back rather than keep tuning.",
@@ -112,19 +112,19 @@ const webFetchCloak2MdTool = defineTool({
 		if (params.extraction_mode === "precision") args.push("--favor-precision");
 		if (params.extraction_mode === "recall") args.push("--favor-recall");
 
-		onUpdate?.({ content: [{ type: "text", text: `web_fetch_cloak2md: rendering ${params.url}` }] });
+		onUpdate?.({ content: [{ type: "text", text: `web_fetch_snitchmd: rendering ${params.url}` }] });
 
 		const processTimeoutMs = Math.max(180_000, (pageTimeout + waitSeconds + 60) * 1000);
 		const result = await runDocker(args, processTimeoutMs, signal);
 		if (result.code !== 0) {
 			return {
-				content: [{ type: "text", text: `web_fetch_cloak2md failed\n${tail(result.stderr || result.stdout || result.error || "unknown error")}` }],
+				content: [{ type: "text", text: `web_fetch_snitchmd failed\n${tail(result.stderr || result.stdout || result.error || "unknown error")}` }],
 				isError: true,
 				details: { code: result.code, stderr: result.stderr, stdout: tail(result.stdout), error: result.error },
 			};
 		}
 
-		let payload: Cloak2MdPayload;
+		let payload: SnitchmdPayload;
 		try {
 			payload = parsePayload(result.stdout);
 		} catch (error) {
@@ -162,5 +162,5 @@ const webFetchCloak2MdTool = defineTool({
 });
 
 export default function (pi: ExtensionAPI) {
-	pi.registerTool(webFetchCloak2MdTool);
+	pi.registerTool(webFetchSnitchmdTool);
 }

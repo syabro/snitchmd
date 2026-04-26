@@ -1,5 +1,5 @@
-image := "syabro/cloak2md:latest"
-local_image := "cloak2md:local"
+image := "syabro/snitchmd:latest"
+local_image := "snitchmd:local"
 
 _default:
     @just --list
@@ -25,19 +25,19 @@ login:
 print-image:
     @echo {{image}}
 
-render-cloak2md-flow:
-    rm -rf /tmp/chromium-cloak2md
+render-snitchmd-flow:
+    rm -rf /tmp/chromium-snitchmd
     -timeout 5 chromium --headless=new --no-sandbox --disable-gpu --hide-scrollbars \
         --no-first-run --no-default-browser-check \
         --disable-background-networking --disable-extensions \
-        --user-data-dir=/tmp/chromium-cloak2md \
+        --user-data-dir=/tmp/chromium-snitchmd \
         --remote-debugging-port=0 \
         --virtual-time-budget=5000 \
         --force-device-scale-factor=2 \
         --window-size=1200,1500 \
-        --screenshot=/tmp/cloak2md-flow.png \
-        file://{{justfile_directory()}}/assets/cloak2md-flow.html
-    magick /tmp/cloak2md-flow.png -trim +repage assets/cloak2md-flow.webp
-    @rm /tmp/cloak2md-flow.png
-    @rm -rf /tmp/chromium-cloak2md
-    @echo "rendered → assets/cloak2md-flow.webp"
+        --screenshot=/tmp/snitchmd-flow.png \
+        file://{{justfile_directory()}}/assets/snitchmd-flow.html
+    magick /tmp/snitchmd-flow.png -trim +repage assets/snitchmd-flow.webp
+    @rm /tmp/snitchmd-flow.png
+    @rm -rf /tmp/chromium-snitchmd
+    @echo "rendered → assets/snitchmd-flow.webp"

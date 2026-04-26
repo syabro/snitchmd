@@ -2,8 +2,8 @@ FROM cloakhq/cloakbrowser:latest
 
 RUN pip install --no-cache-dir rs-trafilatura
 
-COPY cloak2md.py /usr/local/bin/cloak2md
-RUN chmod +x /usr/local/bin/cloak2md
+COPY snitchmd.py /usr/local/bin/snitchmd
+RUN chmod +x /usr/local/bin/snitchmd
 
-ENTRYPOINT ["/entrypoint.sh", "cloak2md"]
+ENTRYPOINT ["/entrypoint.sh", "snitchmd"]
 CMD ["--help"]

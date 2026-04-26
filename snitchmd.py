@@ -21,7 +21,7 @@ def positive_int(value: str) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="cloak2md",
+        prog="snitchmd",
         description="Render a web page with CloakBrowser, then convert the HTML to Markdown.",
     )
     parser.add_argument("url", help="URL to render")
@@ -88,7 +88,7 @@ def main() -> int:
         result = extract_markdown(html, final_url, args)
         markdown = (getattr(result, "content_markdown", None) or getattr(result, "main_content", None) or "").strip()
         if not markdown:
-            print("cloak2md: extraction returned empty content", file=sys.stderr)
+            print("snitchmd: extraction returned empty content", file=sys.stderr)
             return 2
 
         payload = {
@@ -108,12 +108,12 @@ def main() -> int:
             sys.stdout.write(markdown + "\n")
 
         print(
-            f"cloak2md: title={payload['title']!r} quality={payload['quality']} chars={payload['chars']}",
+            f"snitchmd: title={payload['title']!r} quality={payload['quality']} chars={payload['chars']}",
             file=sys.stderr,
         )
         return 0
     except Exception as exc:
-        print(f"cloak2md: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(f"snitchmd: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
 
 
