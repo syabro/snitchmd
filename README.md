@@ -102,6 +102,10 @@ snitchmd https://example.com --json
 snitchmd --help
 ```
 
+## Roadmap
+
+Open ideas live in [`tasks.md`](tasks.md) in [mdtask](https://mdtask.dev/) format. Browse with `pnpx mdtask list` (or any markdown viewer).
+
 ## Development
 
 ```bash
