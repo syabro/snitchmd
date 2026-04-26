@@ -37,7 +37,7 @@ render-snitchmd-flow:
         --window-size=1200,1500 \
         --screenshot=/tmp/snitchmd-flow.png \
         file://{{justfile_directory()}}/assets/snitchmd-flow.html
-    magick /tmp/snitchmd-flow.png -trim +repage assets/snitchmd-flow.webp
+    magick /tmp/snitchmd-flow.png -trim +repage -bordercolor white -border 80 assets/snitchmd-flow.webp
     @rm /tmp/snitchmd-flow.png
     @rm -rf /tmp/chromium-snitchmd
     @echo "rendered → assets/snitchmd-flow.webp"
