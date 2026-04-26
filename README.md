@@ -2,11 +2,24 @@
 
 # cloak2md
 
-`cloak2md` opens a page in [CloakBrowser](https://github.com/CloakHQ/CloakBrowser), extracts the rendered HTML with [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura), and prints clean Markdown.
+**One command turns a web page into clean Markdown — even when `curl` fails.**
 
-Use it for pages where bot and automation detectors get in the way of scraping.
+Use `cloak2md` when:
 
-It's a small Docker wrapper that makes those two tools easy to run together, without adding a new scraping engine.
+- you need to feed a page to an LLM and raw HTML is too noisy for the context window;
+- a plain `curl` or `fetch` returns an empty shell because the page is rendered by JavaScript;
+- the site is gated by Cloudflare, hCaptcha, or similar anti-bot checks;
+- you want one tool that handles all three without picking a scraping engine.
+
+```bash
+cloak2md https://example.com
+```
+
+That's the whole job. Markdown to stdout, ready to paste into a prompt, a note, or a RAG pipeline.
+
+## How it works
+
+Under the hood, `cloak2md` chains two existing projects so you don't have to: [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) renders the page past anti-bot checks, and [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura) strips it down to readable Markdown. It's a small Docker wrapper — no new scraper, no new engine.
 
 ## Install
 
@@ -28,35 +41,37 @@ Save the Markdown:
 cloak2md https://example.com > page.md
 ```
 
-If the output is empty or missing content, wait a few seconds:
+## When the default isn't enough
+
+Pick the fix by symptom. Try one change at a time.
+
+**Output is empty or stub-like.** The page is still loading. Wait a few seconds:
 
 ```bash
 cloak2md https://example.com --wait 5
 ```
 
-If you need content from a specific part of the page, wait for that element:
+**You need a specific section that loads later.** Wait for the element:
 
 ```bash
 cloak2md https://example.com --wait-for-selector ".pricing-card"
 ```
 
-## Extraction modes
-
-Use the default mode first. If the output is noisy, try precision mode:
+**Output is full of nav, footer, cookie banners, or related links.** Use precision mode:
 
 ```bash
 cloak2md https://example.com --favor-precision
 ```
 
-Precision mode removes more non-content text: navigation, footers, cookie banners, and related links. It can also remove useful content on complex pages.
+Precision mode trims more non-content text. On complex pages it can also remove useful content.
 
-If the output is missing important content, try recall mode:
+**Output is missing tables, pricing cards, or docs sections.** Use recall mode:
 
 ```bash
 cloak2md https://example.com --favor-recall
 ```
 
-Recall mode keeps more text from the page. It is useful for pricing cards, docs pages, tables, and pages where the extractor cuts too much. It can include more noise.
+Recall mode keeps more text. It helps on pricing cards, docs pages, and tables where the extractor cuts too much. It can also include more noise.
 
 ## JSON output
 

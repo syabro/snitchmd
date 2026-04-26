@@ -1,0 +1,24 @@
+{
+  "name": "cloak2md-pi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pi skill and extension for fetching web pages as Markdown through cloak2md.",
+  "keywords": [
+    "pi-package",
+    "cloak2md",
+    "web-fetch",
+    "markdown"
+  ],
+  "pi": {
+    "extensions": [
+      "./pi-extensions"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-ai": "*",
+    "@mariozechner/pi-coding-agent": "*"
+  }
+}
