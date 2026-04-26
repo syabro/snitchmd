@@ -26,7 +26,7 @@ Under the hood, `snitchmd` chains two existing projects so you don't have to: [C
 Add this alias to your shell config, then reload your shell:
 
 ```bash
-alias snitchmd='docker run --rm -i --pull=always syabro/snitchmd'
+alias snitchmd='docker run --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd'
 ```
 
 ## Run
@@ -39,6 +39,21 @@ Save the Markdown:
 
 ```bash
 snitchmd https://example.com > page.md
+```
+
+## Cache
+
+Each successful fetch is cached on disk by URL + relevant flags. Re-running the same command reads from cache (no browser launch, no extraction).
+
+- Location: `${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd/` on the host (mounted into the container as `/cache`).
+- Bypass and refresh a single URL: `snitchmd --no-cache https://example.com`.
+- Wipe everything: `rm -rf ~/.cache/snitchmd`.
+- Output-only flags (`--json`, `--html-output`) don't affect the cache key, so the same URL is cached once across them.
+
+## Update
+
+```bash
+docker pull syabro/snitchmd
 ```
 
 ## Content troubleshooting
