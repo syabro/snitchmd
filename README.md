@@ -8,7 +8,7 @@ Use `snitchmd` when:
 
 - you need to feed a page to an LLM and raw HTML is too noisy for the context window;
 - a plain `curl` or `fetch` returns an empty shell because the page is rendered by JavaScript;
-- the site is gated by Cloudflare, hCaptcha, or similar anti-bot checks;
+- the site is gated by Cloudflare, reCAPTCHA, or similar anti-bot checks;
 - you want one tool that handles all three without picking a scraping engine.
 
 ```bash

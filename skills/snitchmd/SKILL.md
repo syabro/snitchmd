@@ -10,7 +10,7 @@ description: Convert a web page to clean Markdown when raw HTML is too noisy for
 Pick `snitchmd` over a plain HTTP fetch when **any** of these is true:
 
 - the page renders content via JavaScript (SPA, dashboards, docs sites);
-- the page is gated by Cloudflare, hCaptcha, or similar anti-bot checks;
+- the page is gated by Cloudflare, reCAPTCHA, or similar anti-bot checks;
 - the raw HTML is far larger than the actual content you care about.
 
 If none of these apply, a plain `curl` or built-in fetch is cheaper.
