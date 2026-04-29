@@ -1,4 +1,4 @@
-version := "0.1.2"
+version := "0.1.3"
 image := "syabro/snitchmd"
 local_image := "snitchmd:local"
 
@@ -15,6 +15,19 @@ push: build
     docker push {{image}}:latest
 
 publish: push
+
+bump new_version:
+    scripts/bump-version {{new_version}}
+
+release new_version:
+    @test -z "$(git status --porcelain)" || (echo "Working tree must be clean before release" >&2; exit 1)
+    scripts/bump-version {{new_version}}
+    git add Justfile
+    git commit -m "CHORE: bump snitchmd to {{new_version}}"
+    git tag v{{new_version}}
+    just publish
+    git push
+    git push origin v{{new_version}}
 
 run url="https://example.com": build
     docker run --rm {{local_image}} {{url}}

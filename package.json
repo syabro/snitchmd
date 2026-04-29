@@ -1,6 +1,5 @@
 {
   "name": "snitchmd-pi",
-  "version": "0.1.1",
   "private": true,
   "description": "Pi skill and extension for fetching web pages as Markdown through snitchmd.",
   "keywords": [
