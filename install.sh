@@ -43,4 +43,5 @@ fi
 
 curl -fsSL "$REPO_RAW/scripts/snitchmd" -o "$target"
 chmod +x "$target"
-echo "Installed to $target. Run: snitchmd https://example.com"
+echo "Installed to $target."
+echo "Run: snitchmd https://example.com"
