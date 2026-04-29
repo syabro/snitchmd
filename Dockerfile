@@ -1,6 +1,6 @@
 FROM cloakhq/cloakbrowser:latest
 
-RUN pip install --no-cache-dir rs-trafilatura
+RUN pip install --no-cache-dir --upgrade cloakbrowser rs-trafilatura
 
 # Suppress CloakBrowser's first-launch welcome banner
 RUN mkdir -p /root/.cloakbrowser && touch /root/.cloakbrowser/.welcome_shown
