@@ -68,13 +68,13 @@ snitchmd https://example.com > page.md
 
 Raw HTML vs snitchmd output, measured in tokens (tiktoken cl100k_base).
 
-| URL | curl | snitchmd | savings |
-|---|---|---|---|
-| https://www.cloudflare.com/learning/bots/what-is-a-bot/ | ❌ HTTP 403 | 0.8k tokens | — |
-| https://docs.docker.com/engine/install/ | 187.0k tokens | 0.9k tokens | -100% |
-| https://en.wikipedia.org/wiki/LLM | 222.7k tokens | 29.7k tokens | -87% |
-| https://github.com/anthropics/anthropic-sdk-python | 127.0k tokens | 0.2k tokens | -100% |
-| https://corrode.dev/blog/bugs-rust-wont-catch/ | 22.0k tokens | 4.7k tokens | -79% |
+| URL | curl | snitchmd | reduction |
+|----------------------------------------------------------------|--------|----------|-----------|
+| https://www.cloudflare.com/learning/bots/what-is-a-bot/ | ❌ HTTP 403 | 0.8k | — |
+| https://docs.docker.com/engine/install/ | 187.0k | 0.9k | 100% |
+| https://en.wikipedia.org/wiki/LLM | 222.7k | 29.7k | 87% |
+| https://github.com/anthropics/anthropic-sdk-python | 127.0k | 0.2k | 100% |
+| https://corrode.dev/blog/bugs-rust-wont-catch/ | 22.0k | 4.7k | 79% |
 
 Measured 2026-04-29.
 

@@ -30,7 +30,7 @@ def count_tokens(text: str) -> int:
 
 
 def format_tokens(tokens: int) -> str:
-    return f"{tokens / 1000:.1f}k tokens"
+    return f"{tokens / 1000:.1f}k"
 
 
 def format_url(url: str) -> str:
@@ -65,17 +65,17 @@ def format_curl_cell(http_code: str, raw_tokens: int) -> str:
     return format_tokens(raw_tokens)
 
 
-def format_savings_cell(http_code: str, raw_tokens: int, md_tokens: int) -> str:
+def format_reduction_cell(http_code: str, raw_tokens: int, md_tokens: int) -> str:
     if http_code != "200" or raw_tokens == 0:
         return "—"
 
-    saved_percent = round((1 - md_tokens / raw_tokens) * 100)
-    return f"-{saved_percent}%"
+    reduced_percent = round((1 - md_tokens / raw_tokens) * 100)
+    return f"{reduced_percent}%"
 
 
 def main() -> int:
-    print("| URL | curl | snitchmd | savings |")
-    print("|---|---|---|---|")
+    print("| URL | curl | snitchmd | reduction |")
+    print("|----------------------------------------------------------------|--------|----------|-----------|")
 
     for url in URLS:
         http_code, raw_tokens = curl_url(url)
@@ -84,7 +84,7 @@ def main() -> int:
             f"| {format_url(url)} | "
             f"{format_curl_cell(http_code, raw_tokens)} | "
             f"{format_tokens(md_tokens)} | "
-            f"{format_savings_cell(http_code, raw_tokens, md_tokens)} |"
+            f"{format_reduction_cell(http_code, raw_tokens, md_tokens)} |"
         )
 
     return 0
