@@ -18,7 +18,7 @@ URLS = [
     "https://docs.docker.com/engine/install/",
     "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
     "https://github.com/anthropics/anthropic-sdk-python",
-    "https://news.ycombinator.com/item?id=1",
+    "https://www.heise.de/en/news/Digital-Sovereignty-Wire-to-Replace-Signal-as-Standard-in-the-Bundestag-11275755.html",
 ]
 
 RAW_HTML_PATH = Path("/tmp/raw.html")
