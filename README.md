@@ -64,6 +64,20 @@ Save the Markdown:
 snitchmd https://example.com > page.md
 ```
 
+## Benchmarks
+
+Raw HTML vs snitchmd output, measured in tokens (tiktoken cl100k_base).
+
+| URL | curl | snitchmd | savings |
+|---|---|---|---|
+| www.cloudflare.com/learning/bots/what-i… | ❌ HTTP 403 | 0.8k tokens | — |
+| docs.docker.com/engine/install/ | 187.0k tokens | 0.9k tokens | 186.1k tokens (100%) |
+| en.wikipedia.org/wiki/Retrieval-augment… | 53.5k tokens | 7.4k tokens | 46.1k tokens (86%) |
+| github.com/anthropics/anthropic-sdk-pyt… | 127.0k tokens | 0.2k tokens | 126.8k tokens (100%) |
+| news.ycombinator.com/item?id=1 | 2.3k tokens | 0.1k tokens | 2.3k tokens (98%) |
+
+Measured 2026-04-29.
+
 ## Cache
 
 Each successful fetch is cached on disk by URL + relevant flags. Re-running the same command reads from cache (no browser launch, no extraction).
