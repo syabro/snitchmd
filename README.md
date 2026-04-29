@@ -21,6 +21,8 @@ That's the whole job. Markdown to stdout, ready to paste into a prompt, a note, 
 
 Under the hood, `snitchmd` chains two existing projects so you don't have to: [CloakBrowser](https://github.com/CloakHQ/CloakBrowser) renders the page past anti-bot checks, and [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura) strips it down to readable Markdown. It's a small Docker wrapper — no new scraper, no new engine.
 
+> _Disclaimer: via [CloakBrowser](https://github.com/CloakHQ/CloakBrowser), snitchmd looks like a real browser — Cloudflare and other detectors don't flag it as a bot ([test results](https://github.com/CloakHQ/CloakBrowser#test-results)). It can't solve the "click all the traffic lights" kind of CAPTCHAs (reCAPTCHA v2, hCaptcha)._
+
 ## Install
 
 ```bash
@@ -93,37 +95,21 @@ Each successful fetch is cached on disk by URL + relevant flags. Re-running the 
 docker pull syabro/snitchmd
 ```
 
-## Content troubleshooting
+## Troubleshooting
 
-Pick the fix by symptom. Try one change at a time.
+When the tool itself or its install is broken. Content-shape problems (empty output, missing sections, too much chrome) are pipeline-tuning decisions — see `snitchmd --help`.
 
-**Output is empty or stub-like.** The page is still loading. Wait a few seconds:
+| Symptom | Fix |
+|---------|-----|
+| `snitchmd: command not found` | Re-run the install one-liner; ensure `~/.local/bin` is on `PATH` |
+| `Docker is not installed or not in PATH` | Install Docker — https://docs.docker.com/get-docker/ |
+| `Docker is installed, but the Docker daemon is not running` | Start Docker (Docker Desktop on Mac/Windows; the Docker service on Linux) |
+| `permission denied` on the Docker socket | Add your user to the `docker` group, then re-login (Linux) |
+| Image pull fails on first run | Check connectivity; retry with `docker pull syabro/snitchmd` |
+| `--platform linux/amd64` warning on Apple Silicon | Expected — runs under Rosetta emulation (slower but works) |
+| Cache directory not writable | Fix ownership of `${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd`, or delete it to let it recreate |
 
-```bash
-snitchmd https://example.com --wait 5
-```
-
-**You need a specific section that loads later.** Wait for the element:
-
-```bash
-snitchmd https://example.com --wait-for-selector ".pricing-card"
-```
-
-**Output is full of nav, footer, cookie banners, or related links.** Use precision mode:
-
-```bash
-snitchmd https://example.com --favor-precision
-```
-
-Precision mode trims more non-content text. On complex pages it can also remove useful content.
-
-**Output is missing tables, pricing cards, or docs sections.** Use recall mode:
-
-```bash
-snitchmd https://example.com --favor-recall
-```
-
-Recall mode keeps more text. It helps on pricing cards, docs pages, and tables where the extractor cuts too much. It can also include more noise.
+**Exit codes.** `0` success, `1` runtime error (browser, network — full message on stderr), `2` extraction returned empty content (page was a loading shell, hit a wall, or has no main content).
 
 ## JSON output
 

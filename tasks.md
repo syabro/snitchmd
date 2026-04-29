@@ -65,3 +65,12 @@ Backlog of QoL ideas to consider.
   - `--frontmatter` flag prepends `---\nurl: …\ntitle: …\nfetched: …\nquality: …\n---\n`
   - Off by default to keep stdout clean
   - Could also expose `--frontmatter-fields title,url` for selective fields
+
+- [ ] SMD-008 Document exit code 1 accurately in SKILL.md and README #docs
+  Both SKILL.md:23 and README.md:112 describe exit code 1 as
+  "runtime error (browser, network)" — but `snitchmd.py:180`
+  catches any Exception (extractor crashes, I/O, anything bubbling
+  up), not just browser/network. Surfaced by a fresh-eyes review.
+
+  - Broaden the description in both files to match what the code
+    actually does, e.g. "uncaught runtime error — full message on stderr"
