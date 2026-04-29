@@ -16,15 +16,12 @@ import tiktoken
 URLS = [
     "https://www.cloudflare.com/learning/bots/what-is-a-bot/",
     "https://docs.docker.com/engine/install/",
-    "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
+    "https://en.wikipedia.org/wiki/LLM",
     "https://github.com/anthropics/anthropic-sdk-python",
-    "https://www.heise.de/en/news/Digital-Sovereignty-Wire-to-Replace-Signal-as-Standard-in-the-Bundestag-11275755.html",
+    "https://corrode.dev/blog/bugs-rust-wont-catch/",
 ]
 
 RAW_HTML_PATH = Path("/tmp/raw.html")
-MAX_URL_LENGTH = 40
-
-
 encoding = tiktoken.get_encoding("cl100k_base")
 
 
@@ -37,10 +34,7 @@ def format_tokens(tokens: int) -> str:
 
 
 def format_url(url: str) -> str:
-    short_url = url.removeprefix("https://")
-    if len(short_url) <= MAX_URL_LENGTH:
-        return short_url
-    return f"{short_url[: MAX_URL_LENGTH - 1]}…"
+    return url
 
 
 def curl_url(url: str) -> tuple[str, int]:
@@ -75,9 +69,8 @@ def format_savings_cell(http_code: str, raw_tokens: int, md_tokens: int) -> str:
     if http_code != "200" or raw_tokens == 0:
         return "—"
 
-    saved_tokens = raw_tokens - md_tokens
-    saved_percent = round((saved_tokens / raw_tokens) * 100)
-    return f"{format_tokens(saved_tokens)} ({saved_percent}%)"
+    saved_percent = round((1 - md_tokens / raw_tokens) * 100)
+    return f"-{saved_percent}%"
 
 
 def main() -> int:
