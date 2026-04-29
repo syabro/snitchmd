@@ -33,6 +33,12 @@ Without install:
 docker run --platform linux/amd64 --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd https://example.com
 ```
 
+Shell alias:
+
+```bash
+alias snitchmd='docker run --platform linux/amd64 --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd'
+```
+
 ## Uninstall
 
 ```bash
