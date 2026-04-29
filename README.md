@@ -112,3 +112,7 @@ Open ideas live in [`tasks.md`](tasks.md) in [mdtask](https://mdtask.dev/) forma
 docker build -t snitchmd:local .
 docker run --rm snitchmd:local https://example.com
 ```
+
+## License
+
+MIT
