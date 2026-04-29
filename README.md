@@ -23,10 +23,27 @@ Under the hood, `snitchmd` chains two existing projects so you don't have to: [C
 
 ## Install
 
-Add this alias to your shell config, then reload your shell:
+```bash
+curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
+```
+
+Without install:
 
 ```bash
-alias snitchmd='docker run --platform linux/amd64 --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd'
+docker run --platform linux/amd64 --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd https://example.com
+```
+
+## Uninstall
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash -s -- --uninstall
+```
+
+Optional cleanup:
+
+```bash
+docker rmi syabro/snitchmd
+rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd"
 ```
 
 ## Run
