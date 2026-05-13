@@ -1,19 +1,24 @@
 ###############################################################################
-# Stage 1 — build rs-trafilatura extract_stdin CLI
+# Stage 1 — build extract_stdin (our fork in tools/, depends on rs-trafilatura)
 ###############################################################################
 FROM rust:slim AS trafilatura-builder
+SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
+
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /build
-RUN git clone --depth 1 https://github.com/Murrough-Foley/rs-trafilatura.git . \
- && rm -f rust-toolchain.toml \
- && cargo build --release --bin extract_stdin \
- && strip target/release/extract_stdin
+COPY tools/extract_stdin /build/extract_stdin
+RUN cd extract_stdin \
+ && cargo build --release \
+ && cp target/release/extract_stdin /build/extract_stdin-bin \
+ && strip /build/extract_stdin-bin
 
 ###############################################################################
 # Stage 2 — install bun + npm deps + pre-download chrome
 ###############################################################################
 FROM oven/bun:1-debian AS bun-builder
+SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 WORKDIR /app
 COPY runtime/package.json ./package.json
 COPY snitchmd.ts ./
@@ -22,8 +27,13 @@ RUN bun install --production
 # bloat (Windows variant chromium, locales, chromedriver) never makes it
 # into the COPY --from in the final stage.
 RUN bun -e "import('cloakbrowser').then(m => m.ensureBinary()).then(p => console.log('downloaded to', p))" \
- && PLATFORM_ID=$(cat /root/.cloakbrowser/latest_version_linux-* | head -1) \
+ && shopt -s nullglob \
+ && versions=( /root/.cloakbrowser/latest_version_linux-* ) \
+ && [ ${#versions[@]} -gt 0 ] || { echo "no latest_version_linux-* marker found"; ls -la /root/.cloakbrowser/; exit 1; } \
+ && PLATFORM_ID=$(<"${versions[0]}") \
+ && [ -n "$PLATFORM_ID" ] || { echo "PLATFORM_ID empty"; exit 1; } \
  && KEEP="/root/.cloakbrowser/chromium-${PLATFORM_ID}" \
+ && [ -d "$KEEP" ] || { echo "expected chromium dir missing: $KEEP"; ls -la /root/.cloakbrowser/; exit 1; } \
  && for d in /root/.cloakbrowser/chromium-*; do [ "$d" = "$KEEP" ] || rm -rf "$d"; done \
  && find "$KEEP/locales" -type f ! -name 'en.pak' ! -name 'en-US.pak' -delete \
  && rm -f "$KEEP/chromedriver" \
@@ -57,7 +67,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=bun-builder /usr/local/bin/bun /usr/local/bin/bun
 
 # rs-trafilatura CLI
-COPY --from=trafilatura-builder /build/target/release/extract_stdin /usr/local/bin/extract_stdin
+COPY --from=trafilatura-builder /build/extract_stdin-bin /usr/local/bin/extract_stdin
 
 # app + node_modules + pre-downloaded chrome
 COPY --from=bun-builder /app /app

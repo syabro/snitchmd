@@ -1,7 +1,7 @@
 {
   "name": "snitchmd-pi",
   "private": true,
-  "description": "Pi skill and extension for fetching web pages as Markdown through snitchmd.",
+  "description": "Pi skill for fetching web pages as Markdown through snitchmd.",
   "keywords": [
     "pi-package",
     "snitchmd",
@@ -9,15 +9,8 @@
     "markdown"
   ],
   "pi": {
-    "extensions": [
-      "./pi-extensions"
-    ],
     "skills": [
       "./skills"
     ]
-  },
-  "peerDependencies": {
-    "@earendil-works/pi-ai": "*",
-    "@earendil-works/pi-coding-agent": "*"
   }
 }
