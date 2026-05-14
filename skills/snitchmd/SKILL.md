@@ -34,44 +34,34 @@ snitchmd https://example.com --json     # metadata + char count
 
 <!-- BEGIN: snitchmd --help -->
 ```text
-usage: snitchmd [-h] [--json] [--html-output HTML_OUTPUT] [--no-cache]
-                [--timeout TIMEOUT] [--wait WAIT]
-                [--wait-until {commit,domcontentloaded,load,networkidle}]
-                [--wait-for-selector WAIT_FOR_SELECTOR] [--headful]
-                [--humanize] [--proxy PROXY] [--timezone TIMEZONE]
-                [--locale LOCALE] [--include-links] [--include-images]
-                [--favor-precision | --favor-recall]
-                url
+Usage: snitchmd URL [options]
 
 Render a web page with CloakBrowser, then convert the HTML to Markdown.
 
-positional arguments:
-  url                   URL to render
-
-options:
-  -h, --help            show this help message and exit
-  --json                Output JSON with metadata and markdown
-  --html-output HTML_OUTPUT
-                        Also save rendered HTML to this file
-  --no-cache            Bypass the on-disk cache (forces a fresh fetch and
-                        overwrites the cache)
-  --timeout TIMEOUT     Page load timeout in seconds (default: 45)
-  --wait WAIT           Extra wait after page load in seconds
-  --wait-until {commit,domcontentloaded,load,networkidle}
-                        Playwright goto wait condition
-  --wait-for-selector WAIT_FOR_SELECTOR
-                        Wait for a CSS selector before extraction
-  --headful             Run headed Chromium under Xvfb instead of headless
-  --humanize            Enable CloakBrowser human-like mouse/keyboard/scroll
-                        patching
-  --proxy PROXY         Proxy URL, e.g. http://user:pass@host:8080 or
-                        socks5://host:1080
-  --timezone TIMEZONE   IANA timezone fingerprint, e.g. Europe/Berlin
-  --locale LOCALE       Browser locale, e.g. en-US
-  --include-links       Preserve links in Markdown when rs-trafilatura can
-  --include-images      Include image data when rs-trafilatura can
-  --favor-precision     Prefer less boilerplate, even if some content is lost
-  --favor-recall        Prefer more content, even if some boilerplate remains
+Options:
+  --json                       Output JSON with metadata and markdown
+  --html-output FILE           Also save rendered HTML to this file
+  --no-cache                   Bypass the on-disk cache (forces a fresh fetch)
+  --timeout SECONDS            Page load timeout (default: 45)
+  --wait SECONDS               Extra wait after page load (default: 0)
+  --wait-until STATE           Playwright goto wait condition; one of
+                               commit | domcontentloaded | load | networkidle
+                               (default: domcontentloaded)
+  --wait-for-selector CSS      Wait for a CSS selector before extraction
+  --headful                    Run headed Chromium under Xvfb instead of headless
+  --humanize                   Enable CloakBrowser human-like mouse/keyboard/scroll
+  --proxy URL                  Proxy URL (http://user:pass@host:8080 or socks5://...)
+  --timezone IANA              IANA timezone fingerprint (e.g. Europe/Berlin)
+  --locale TAG                 Browser locale (e.g. en-US)
+  --include-links              Preserve links in extracted Markdown
+  --include-images             Include image references in extracted Markdown
+  --favor-precision            Prefer less boilerplate, even if some content is lost
+                               (mutually exclusive with --favor-recall)
+  --favor-recall               Prefer more content, even if some boilerplate remains
+                               (mutually exclusive with --favor-precision)
+  --max-chars N                Truncate Markdown output to at most N characters
+                               (appends "\n\n[truncated]"). Default: no limit.
+  -h, --help                   Show this message and exit
 ```
 <!-- END: snitchmd --help -->
 

@@ -32,7 +32,9 @@ def main() -> int:
         return 1
 
     new_block = f"{BEGIN}\n```text\n{help_text}\n```\n{END}"
-    new_content = pattern.sub(new_block, content, count=1)
+    # Use a callable replacement so re.sub doesn't interpret backslash
+    # sequences (\n, \g<…>, …) inside `help_text` as regex escapes.
+    new_content = pattern.sub(lambda _: new_block, content, count=1)
 
     if new_content == content:
         print("update-skill-help: already in sync.")

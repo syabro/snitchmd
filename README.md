@@ -32,14 +32,16 @@ curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh |
 Without install:
 
 ```bash
-docker run --platform linux/amd64 --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd https://example.com
+docker run --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd https://example.com
 ```
 
 Shell alias:
 
 ```bash
-alias snitchmd='docker run --platform linux/amd64 --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd'
+alias snitchmd='docker run --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:/cache" syabro/snitchmd'
 ```
+
+The image is published as a multi-arch manifest (`linux/amd64` + `linux/arm64`), so Docker pulls the right one for your host automatically.
 
 ## Uninstall
 
@@ -106,7 +108,6 @@ When the tool itself or its install is broken. Content-shape problems (empty out
 | `Docker is installed, but the Docker daemon is not running` | Start Docker (Docker Desktop on Mac/Windows; the Docker service on Linux) |
 | `permission denied` on the Docker socket | Add your user to the `docker` group, then re-login (Linux) |
 | Image pull fails on first run | Check connectivity; retry with `docker pull syabro/snitchmd` |
-| `--platform linux/amd64` warning on Apple Silicon | Expected — runs under Rosetta emulation (slower but works) |
 | Cache directory not writable | Fix ownership of `${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd`, or delete it to let it recreate |
 
 **Exit codes.** `0` success, `1` runtime error (browser, network — full message on stderr), `2` extraction returned empty content (page was a loading shell, hit a wall, or has no main content).
@@ -132,9 +133,14 @@ Open ideas live in [`tasks.md`](tasks.md) in [mdtask](https://mdtask.dev/) forma
 ## Development
 
 ```bash
-docker build -t snitchmd:local .
+just build                 # builds linux/amd64 + linux/arm64 locally
 docker run --rm snitchmd:local https://example.com
 ```
+
+`just build` works on both Mac (arm64 native, amd64 via Rosetta) and Linux
+PC (amd64 native, arm64 via qemu). If you have a beefier remote machine
+sync'd with your tree, `just build-pc-local` ssh's in and builds there.
+`just push` publishes a multi-arch manifest to Docker Hub.
 
 ## License
 
