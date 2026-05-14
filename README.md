@@ -43,6 +43,14 @@ alias snitchmd='docker run --rm -i -v "${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd:
 
 The image is published as a multi-arch manifest (`linux/amd64` + `linux/arm64`), so Docker pulls the right one for your host automatically.
 
+### Install the skill (Claude Code / Pi / any agent)
+
+Paste this into your agent:
+
+```text
+read https://github.com/syabro/snitchmd/blob/master/README.md, install https://raw.githubusercontent.com/syabro/snitchmd/master/skills/snitchmd/SKILL.md, then show me a couple of usage examples.
+```
+
 ## Uninstall
 
 ```bash
