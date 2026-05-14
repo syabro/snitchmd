@@ -74,3 +74,10 @@ Backlog of QoL ideas to consider.
 
   - Broaden the description in both files to match what the code
     actually does, e.g. "uncaught runtime error — full message on stderr"
+
+- [ ] SMD-009 Evaluate `feder-cr/invisible_playwright` as CloakBrowser replacement #browser #infra
+  - Run CloakBrowser's test suite against `invisible_playwright` — do the
+    same anti-bot sites pass?
+  - Measure Docker image size diff: current build vs. invisible_playwright
+    + standard Playwright Chromium
+  - Decision: switch, keep, or gate behind a flag
