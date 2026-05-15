@@ -4,6 +4,8 @@
 
 **Snitch any URL as Markdown. Even Cloudflare/anti-bot protected. Ready for LLM.**
 
+snitchmd is a Docker wrapper around CloakBrowser and rs-trafilatura that turns any URL into clean Markdown, bypassing anti-bot protection.
+
 Use `snitchmd` when:
 
 - you need to feed a page to an LLM and raw HTML is too noisy for the context window;
