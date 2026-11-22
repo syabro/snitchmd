@@ -1,15 +1,31 @@
 #!/bin/sh
 # snitchmd URL [lightpanda fetch options...]
-# Patched Lightpanda with Safari network fingerprint, Safari identity and
-# rs-trafilatura main-content Markdown.
+# Runs patched Lightpanda with Safari network fingerprint, Safari JS identity,
+# and rs-trafilatura Markdown extraction.
 set -eu
-DIR="$(cd "$(dirname "$0")" && pwd)"
-[ $# -ge 1 ] || { echo "usage: snitchmd URL [lightpanda fetch options...]" >&2; exit 2; }
-url="$1"; shift
-export CURL_IMPERSONATE=safari270 CURL_IMPERSONATE_HEADERS=no LIGHTPANDA_DISABLE_TELEMETRY=true
-exec "$DIR/dist/lightpanda" fetch "$url" \
-  --dump trafilatura --wait-until done --wait-ms 30000 \
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+if [ $# -lt 1 ]; then
+  echo "usage: snitchmd URL [lightpanda fetch options...]" >&2
+  exit 2
+fi
+
+url="$1"
+shift
+
+# TLS and HTTP/2 fingerprint of Safari 27.0; must match --user-agent below.
+export CURL_IMPERSONATE=safari270
+
+# Lightpanda sends its own headers; curl-impersonate's built-in list would add a second set.
+export CURL_IMPERSONATE_HEADERS=no
+
+export LIGHTPANDA_DISABLE_TELEMETRY=true
+
+# --wait-ms 30000: JS anti-bot checks (e.g. Cloudflare) can take up to 30 s.
+exec "$ROOT/dist/lightpanda" fetch "$url" \
+  --dump main_markdown --wait-until done --wait-ms 30000 \
   --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15' \
-  --inject-script-file "$DIR/inject/safari.js" \
-  --inject-script-file "$DIR/inject/style-index.js" \
+  --inject-script-file "$ROOT/inject/safari.js" \
+  --inject-script-file "$ROOT/inject/style-index.js" \
   "$@"

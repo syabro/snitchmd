@@ -1,48 +1,72 @@
 #!/bin/sh
-# Fetches pinned Lightpanda, BoringSSL, boringssl-zig, curl and curl-impersonate,
-# applies the patches and builds one binary into dist/lightpanda.
+# Fetches pinned Lightpanda, BoringSSL, boringssl-zig, curl, and curl-impersonate,
+# applies patches, and builds dist/lightpanda.
 # `build.sh prepare` stops after patching.
 set -eu
+
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 . "$ROOT/versions.env"
-W="$ROOT/build"
-mkdir -p "$W/dl" "$ROOT/dist"
-export ZIG_GLOBAL_CACHE_DIR="$W/zig-global"
+BUILD="$ROOT/build"
 
-# Checkout <url> at <rev> into $W/<dir>, discarding earlier patches; ignored files
-# (build caches) are kept.
+mkdir -p "$BUILD/dl"
+export ZIG_GLOBAL_CACHE_DIR="$BUILD/zig-global"
+
+# Checks out <url> at <rev> into $BUILD/<name>, discarding earlier patches;
+# keeps ignored files (build caches).
 checkout() {
-  dir="$W/$1"
-  [ -d "$dir/.git" ] || { git init -q "$dir"; git -C "$dir" remote add origin "$2"; }
-  git -C "$dir" fetch -q --depth 1 origin "$3"
+  name=$1 url=$2 rev=$3
+  dir="$BUILD/$name"
+
+  if [ ! -d "$dir/.git" ]; then
+    git init -q "$dir"
+    git -C "$dir" remote add origin "$url"
+  fi
+
+  git -C "$dir" fetch -q --depth 1 origin "$rev"
   git -C "$dir" checkout -q -f FETCH_HEAD
   git -C "$dir" clean -q -fd
 }
 
+# Fixed names: patches reference ../boringssl and ../boringssl-zig.
 checkout curl-impersonate "$CURL_IMPERSONATE_URL" "$CURL_IMPERSONATE_REV"
 checkout boringssl "$BORINGSSL_URL" "$BORINGSSL_REV"
 checkout boringssl-zig "$BORINGSSL_ZIG_URL" "$BORINGSSL_ZIG_REV"
 checkout lightpanda "$LIGHTPANDA_URL" "$LIGHTPANDA_REV"
 
-tarball="$W/dl/curl-$CURL_VERSION.tar.gz"
-[ -f "$tarball" ] || curl -fsSL -o "$tarball" "$CURL_TARBALL"
-rm -rf "$W/curl-$CURL_VERSION"
-tar -xzf "$tarball" -C "$W"
-# Own repo, so `git apply` does not resolve paths against an enclosing checkout.
-git init -q "$W/curl-$CURL_VERSION"
+# Fixed name: patches/lightpanda.patch references ../curl.
+curl_dir="$BUILD/curl"
+tarball="$BUILD/dl/curl-$CURL_VERSION.tar.gz"
+curl_version_tag=$(echo "$CURL_VERSION" | tr . _)
+curl_tag="curl-$curl_version_tag"
+if [ ! -f "$tarball" ]; then
+  curl -fsSL -o "$tarball" "https://github.com/curl/curl/releases/download/$curl_tag/curl-$CURL_VERSION.tar.gz"
+fi
 
-# Two parts of curl-impersonate's patch target the git tree, not the release
-# tarball: curlver.h differs there and scripts/singleuse.pl is not shipped.
-# The rest applies as is.
-git -C "$W/curl-$CURL_VERSION" apply \
+rm -rf "$curl_dir"
+mkdir -p "$curl_dir"
+tar -xzf "$tarball" -C "$curl_dir" --strip-components=1
+
+# Separate git repo so git apply resolves paths here, not against the parent checkout.
+git init -q "$curl_dir"
+
+# curl-impersonate's curl.patch targets the git tree: curlver.h differs in the
+# release tarball and scripts/singleuse.pl is not shipped.
+git -C "$curl_dir" apply \
   --exclude=include/curl/curlver.h --exclude=scripts/singleuse.pl \
-  "$W/curl-impersonate/patches/curl.patch"
-git -C "$W/boringssl" apply "$W/curl-impersonate/patches/boringssl.patch"
-git -C "$W/boringssl-zig" apply "$ROOT/patches/boringssl-zig.patch"
-git -C "$W/lightpanda" apply "$ROOT/patches/lightpanda.patch"
+  "$BUILD/curl-impersonate/patches/curl.patch"
 
-[ "${1:-}" = prepare ] && { echo "prepared: $W"; exit 0; }
+git -C "$BUILD/boringssl" apply "$BUILD/curl-impersonate/patches/boringssl.patch"
+git -C "$BUILD/boringssl-zig" apply "$ROOT/patches/boringssl-zig.patch"
+git -C "$BUILD/lightpanda" apply "$ROOT/patches/lightpanda.patch"
 
-(cd "$W/lightpanda" && make download-v8 && make build)
-cp "$W/lightpanda/zig-out/bin/lightpanda" "$ROOT/dist/lightpanda"
+# prepare: stop after patching to allow inspecting or modifying build/.
+if [ "${1:-}" = prepare ]; then
+  echo "prepared: $BUILD"
+  exit 0
+fi
+
+(cd "$BUILD/lightpanda" && make download-v8 && make build)
+
+mkdir -p "$ROOT/dist"
+cp "$BUILD/lightpanda/zig-out/bin/lightpanda" "$ROOT/dist/lightpanda"
 echo "built: $ROOT/dist/lightpanda"

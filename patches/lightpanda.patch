@@ -11,7 +11,7 @@ index ed5135c26..40e14c373 100644
      });
  
 diff --git a/build.zig.zon b/build.zig.zon
-index ec08091d2..fb474bdc4 100644
+index ec08091d2..81b8b2168 100644
 --- a/build.zig.zon
 +++ b/build.zig.zon
 @@ -26,15 +26,9 @@
@@ -27,21 +27,21 @@ index ec08091d2..fb474bdc4 100644
 -            .url = "https://github.com/curl/curl/releases/download/curl-8_23_0/curl-8.23.0.tar.gz",
 -            .hash = "N-V-__8AAMjlVwH79yAHsK65VUcPuhOO6BWgpLDvvnlWPLly",
 -        },
-+        // impersonate: local BoringSSL wrapper and curl 8.23.0, both with curl-impersonate patches
++        // impersonate: local boringssl-zig and curl patched with curl-impersonate.
 +        .@"boringssl-zig" = .{ .path = "../boringssl-zig" },
-+        .curl = .{ .path = "../curl-8.23.0" },
++        .curl = .{ .path = "../curl" },
          .sqlite3 = .{
              .url = "https://sqlite.org/2026/sqlite-amalgamation-3530200.zip",
              .hash = "N-V-__8AALc_rgC04POe18O0LKFRm4ouQpLtL3riscEmWp-Q",
 diff --git a/src/Config.zig b/src/Config.zig
-index 7368bdc92..115f3fab0 100644
+index 7368bdc92..f183306e4 100644
 --- a/src/Config.zig
 +++ b/src/Config.zig
 @@ -1096,6 +1096,7 @@ pub fn customCertStore(self: *const Config) ?*crypto.X509_STORE {
  pub const DumpFormat = enum {
      html,
      markdown,
-+    trafilatura,
++    main_markdown,
      png,
      pdf,
      wpt,
@@ -74,8 +74,8 @@ index 7368bdc92..115f3fab0 100644
  }
  
 -pub fn validateUserAgent(ua: []const u8) !void {
-+// impersonate: browser user-agents ("Mozilla/...") are allowed; the Reserved
-+// error stays in the set because callers still switch on it.
++// impersonate: allows browser user-agents ("Mozilla/..."); keeps error.Reserved
++// in the set because callers switch on it.
 +pub fn validateUserAgent(ua: []const u8) error{ NonPrintable, Reserved }!void {
      for (ua) |c| {
          if (!std.ascii.isPrint(c)) {
@@ -89,76 +89,104 @@ index 7368bdc92..115f3fab0 100644
  }
  
  fn localeValidator(allocator: Allocator, args: *std.process.Args.Iterator, field: *[:0]const u8) !void {
-diff --git a/src/browser/trafilatura.zig b/src/browser/trafilatura.zig
+diff --git a/src/browser/main_markdown.zig b/src/browser/main_markdown.zig
 new file mode 100644
-index 000000000..a3d88efe0
+index 000000000..9ccf40852
 --- /dev/null
-+++ b/src/browser/trafilatura.zig
-@@ -0,0 +1,29 @@
-+// impersonate: `--dump trafilatura` — the rendered DOM serialized as HTML,
-+// then reduced to its main content as Markdown by rs-trafilatura
-+// (src/rust/trafilatura), the extractor snitchmd uses.
++++ b/src/browser/main_markdown.zig
+@@ -0,0 +1,44 @@
++// snitchmd: `--dump main_markdown` serializes the rendered DOM to HTML, then
++// extracts the main content as Markdown with rs-trafilatura (src/rust/trafilatura).
 +
 +const std = @import("std");
 +const dump = @import("dump.zig");
 +const RenderTree = @import("RenderTree.zig");
 +const Frame = @import("Frame.zig");
 +
-+const Output = extern struct {
-+    ptr: ?[*]u8,
-+    len: usize,
-+};
-+
-+extern "c" fn trafilatura_markdown(html: [*]const u8, html_len: usize, url: [*]const u8, url_len: usize, include_images: bool) Output;
-+extern "c" fn trafilatura_free(out: Output) void;
-+
++/// Writes the page's main content as Markdown extracted by rs-trafilatura.
 +pub fn render(allocator: std.mem.Allocator, state: RenderTree.State, opts: dump.Opts, writer: *std.Io.Writer, frame: *Frame) !void {
 +    var html: std.Io.Writer.Allocating = .init(allocator);
 +    defer html.deinit();
 +    try dump.render(state, opts, &html.writer, frame);
 +    const bytes = html.written();
 +
-+    const out = trafilatura_markdown(bytes.ptr, bytes.len, frame.url.ptr, frame.url.len, false);
++    const out = trafilatura_markdown(.{
++        .html_ptr = bytes.ptr,
++        .html_len = bytes.len,
++        .url_ptr = frame.url.ptr,
++        .url_len = frame.url.len,
++    });
 +    defer trafilatura_free(out);
++
++    // null: no main content, or rs-trafilatura failed (failures are logged to stderr).
 +    const ptr = out.ptr orelse return error.ExtractionEmpty;
++
 +    try writer.writeAll(ptr[0..out.len]);
 +    try writer.writeByte('\n');
 +}
++
++const Input = extern struct {
++    html_ptr: [*]const u8,
++    html_len: usize,
++    url_ptr: [*]const u8,
++    url_len: usize,
++};
++
++const Output = extern struct {
++    ptr: ?[*]u8,
++    len: usize,
++};
++
++extern "c" fn trafilatura_markdown(input: Input) Output;
++extern "c" fn trafilatura_free(out: Output) void;
 diff --git a/src/browser/webapi/net/WebSocket.zig b/src/browser/webapi/net/WebSocket.zig
-index 5c0bc2bc8..532ebf2b6 100644
+index 5c0bc2bc8..fc879e1f3 100644
 --- a/src/browser/webapi/net/WebSocket.zig
 +++ b/src/browser/webapi/net/WebSocket.zig
-@@ -276,6 +276,7 @@ fn connect(self: *WebSocket, protocols: []const []const u8) !void {
+@@ -276,6 +276,8 @@ fn connect(self: *WebSocket, protocols: []const []const u8) !void {
  
      const allocator = arena.allocator();
      for (http_client.baselineHeaders()) |hdr| {
++        // impersonate: omit client hints when using a browser user-agent.
 +        if (http_client.skipBaselineHeader(hdr.name)) continue;
          try conn.addHeader(allocator, hdr.name, hdr.value);
      }
      if (protocols.len > 0) {
 diff --git a/src/help.zon b/src/help.zon
-index 1ba73157a..bb371ff80 100644
+index 1ba73157a..93ea1aa7a 100644
 --- a/src/help.zon
 +++ b/src/help.zon
-@@ -111,6 +111,9 @@
+@@ -111,6 +111,8 @@
      \\                                 with --dump-selector, --wait-selector,
      \\                                 --wait-script or --inject-script,
      \\                                 which need the DOM.
-+    \\              trafilatura        Main content as Markdown, extracted
-+    \\                                 by rs-trafilatura from the rendered
-+    \\                                 DOM (same extractor as snitchmd).
++    \\              main_markdown      Main content as Markdown, extracted
++    \\                                 from the rendered DOM by rs-trafilatura.
      \\              pdf                Text-only rendering of the page as a
      \\                                 PDF file (base64 with --json).
      \\              png                Text-only rendering of the page as a
+@@ -649,9 +651,9 @@
+     \\          Time zone used by Date and Intl, e.g. Europe/Paris or UTC.
+     \\          Defaults to the host time zone.
+     \\  --user-agent <STRING>
+-    \\          Override the User-Agent header entirely. Must not impersonate other
+-    \\          browsers; any value containing "Mozilla" is forbidden. The browser
+-    \\          still sends Sec-Ch-Ua. Incompatible with --user-agent-suffix.
++    \\          Override the User-Agent header entirely. The browser omits
++    \\          Sec-Ch-Ua headers when the value contains "Mozilla".
++    \\          Incompatible with --user-agent-suffix.
+     \\  --user-agent-suffix <STRING>
+     \\          Suffix appended to the Lightpanda/X.Y User-Agent.
+     \\  --v8-flags-unsafe <FLAGS>
 diff --git a/src/lightpanda.zig b/src/lightpanda.zig
-index 5dfe5aa70..c67539046 100644
+index 5dfe5aa70..4de6ae1bc 100644
 --- a/src/lightpanda.zig
 +++ b/src/lightpanda.zig
 @@ -66,6 +66,7 @@ pub const actions = @import("browser/actions.zig");
  pub const Browser = @import("browser/Browser.zig");
  pub const Session = @import("browser/Session.zig");
  pub const markdown = @import("browser/markdown.zig");
-+pub const trafilatura = @import("browser/trafilatura.zig");
++pub const main_markdown = @import("browser/main_markdown.zig");
  pub const screenshot = @import("browser/screenshot.zig");
  pub const RenderTree = @import("browser/RenderTree.zig");
  pub const interactive = @import("browser/interactive.zig");
@@ -166,39 +194,33 @@ index 5dfe5aa70..c67539046 100644
      switch (mode) {
          .html => try dump.render(state, opts.dump, writer, frame),
          .markdown => try markdown.dump(state, .{ .max_bytes = opts.dump.max_bytes }, writer, frame),
-+        .trafilatura => try trafilatura.render(arena.allocator(), state, opts.dump, writer, frame),
++        .main_markdown => try main_markdown.render(arena.allocator(), state, opts.dump, writer, frame),
          .png => {
              _ = try screenshot.png(arena.allocator(), state, pngOpts(frame), writer, frame);
          },
 diff --git a/src/network/HttpClient.zig b/src/network/HttpClient.zig
-index 1a1163a86..48476f399 100644
+index 1a1163a86..b69c08c1b 100644
 --- a/src/network/HttpClient.zig
 +++ b/src/network/HttpClient.zig
-@@ -493,6 +493,20 @@ pub fn getLanguages(self: *const Client) []const []const u8 {
+@@ -493,6 +493,13 @@ pub fn getLanguages(self: *const Client) []const []const u8 {
      return (self.accept_language_override orelse self.network.config.http_headers.accept_language).languages;
  }
  
-+// impersonate: with a browser user-agent ("Mozilla/...") the Lightpanda
-+// client hints would contradict it, so they are not sent.
-+pub fn sendsClientHints(self: *const Client) bool {
-+    return std.ascii.findIgnoreCase(self.getUserAgent(), "mozilla") == null;
-+}
-+
-+fn isClientHint(name: []const u8) bool {
-+    return std.ascii.startsWithIgnoreCase(name, "sec-ch-ua");
-+}
-+
++// impersonate: omits sec-ch-ua* client hints for browser user-agents
++// ("Mozilla/...") so they do not contradict the User-Agent.
 +pub fn skipBaselineHeader(self: *const Client, name: []const u8) bool {
-+    return isClientHint(name) and !self.sendsClientHints();
++    const browser_ua = std.ascii.findIgnoreCase(self.getUserAgent(), "mozilla") != null;
++    return browser_ua and std.ascii.startsWithIgnoreCase(name, "sec-ch-ua");
 +}
 +
  // Headers _all_ requests include.
  pub fn baselineHeaders(self: *const Client) [4]Transfer.RequestHeader {
      return .{
-@@ -4385,6 +4399,7 @@ pub const Transfer = struct {
+@@ -4385,6 +4392,8 @@ pub const Transfer = struct {
      // The client's baseline headers, added to every request at creation.
      fn seedHeaders(self: *Transfer) !void {
          for (self.client.baselineHeaders()) |hdr| {
++            // impersonate: omit client hints when using a browser user-agent.
 +            if (self.client.skipBaselineHeader(hdr.name)) continue;
              try self.addHeader(hdr.name, hdr.value, .{ .source = hdr.source });
          }
@@ -1198,15 +1220,24 @@ index 000000000..c4c2d8242
 +rs-trafilatura = { git = "https://github.com/Murrough-Foley/rs-trafilatura", rev = "2a4f56eef84cca2d319d27c9108373d593110355", version = "0.2.2" }
 diff --git a/src/rust/trafilatura/src/lib.rs b/src/rust/trafilatura/src/lib.rs
 new file mode 100644
-index 000000000..2bc1d5c7c
+index 000000000..e104593ee
 --- /dev/null
 +++ b/src/rust/trafilatura/src/lib.rs
-@@ -0,0 +1,70 @@
-+// impersonate: main-content extraction with rs-trafilatura, the same
-+// extractor snitchmd uses, so `--dump trafilatura` gives snitchmd's Markdown.
+@@ -0,0 +1,86 @@
++// snitchmd: extracts a page's main content as Markdown with rs-trafilatura
++// for `--dump main_markdown`.
 +
 +use rs_trafilatura::{extract_with_options, Options};
 +use std::os::raw::c_uchar;
++
++/// Page to extract from. `url` resolves relative links and may be empty.
++#[repr(C)]
++pub struct TrafilaturaInput {
++    pub html_ptr: *const c_uchar,
++    pub html_len: usize,
++    pub url_ptr: *const c_uchar,
++    pub url_len: usize,
++}
 +
 +/// Markdown returned to Zig; freed with `trafilatura_free`.
 +#[repr(C)]
@@ -1215,60 +1246,67 @@ index 000000000..2bc1d5c7c
 +    pub len: usize,
 +}
 +
-+/// Extracts the main content of `html` as Markdown. `url` may be empty.
-+/// Returns an empty output when nothing could be extracted.
++/// Extracts the main content as Markdown. A null `ptr` means no main content
++/// was found or extraction failed (failures go to stderr).
 +#[no_mangle]
-+pub extern "C" fn trafilatura_markdown(
-+    html: *const c_uchar,
-+    html_len: usize,
-+    url: *const c_uchar,
-+    url_len: usize,
-+    include_images: bool,
-+) -> TrafilaturaOutput {
++pub extern "C" fn trafilatura_markdown(input: TrafilaturaInput) -> TrafilaturaOutput {
 +    let empty = TrafilaturaOutput { ptr: std::ptr::null_mut(), len: 0 };
-+    if html.is_null() || html_len == 0 {
++
++    // Empty HTML input.
++    let Some(html) = read_bytes(input.html_ptr, input.html_len) else {
 +        return empty;
-+    }
-+    let html = unsafe { std::slice::from_raw_parts(html, html_len) };
-+    let html = String::from_utf8_lossy(html);
-+    let url = if url.is_null() || url_len == 0 {
-+        None
-+    } else {
-+        let bytes = unsafe { std::slice::from_raw_parts(url, url_len) };
-+        Some(String::from_utf8_lossy(bytes).into_owned())
 +    };
 +
-+    // Same settings snitchmd passes with --markdown.
++    let html = String::from_utf8_lossy(html);
++    let url = read_bytes(input.url_ptr, input.url_len).map(|b| String::from_utf8_lossy(b).into_owned());
++
++    // Matches the options snitchmd v1 passed to rs-trafilatura with --markdown.
 +    let options = Options {
 +        url,
 +        output_markdown: true,
 +        include_tables: true,
 +        include_links: true,
 +        include_formatting: true,
-+        include_images,
++        include_images: false,
 +        ..Options::default()
 +    };
 +
 +    let markdown = match extract_with_options(&html, &options) {
 +        Ok(r) => r.content_markdown.unwrap_or(r.content_text),
-+        Err(_) => return empty,
++        Err(e) => {
++            eprintln!("trafilatura failed for {:?}: {e}", options.url);
++            return empty;
++        }
 +    };
++
 +    let markdown = markdown.trim();
++
++    // The page has no main content.
 +    if markdown.is_empty() {
 +        return empty;
 +    }
++
 +    let mut boxed = markdown.as_bytes().to_vec().into_boxed_slice();
 +    let out = TrafilaturaOutput { ptr: boxed.as_mut_ptr(), len: boxed.len() };
++    // Ownership moves to Zig; trafilatura_free rebuilds the Box and frees it.
 +    std::mem::forget(boxed);
 +    out
 +}
 +
++/// Frees Markdown returned by `trafilatura_markdown`. A null output is a no-op.
 +#[no_mangle]
 +pub extern "C" fn trafilatura_free(out: TrafilaturaOutput) {
 +    if out.ptr.is_null() {
 +        return;
 +    }
++
 +    unsafe {
 +        drop(Box::from_raw(std::slice::from_raw_parts_mut(out.ptr, out.len)));
 +    }
++}
++
++/// Turns a pointer and length from Zig into a byte slice; None when the length is 0.
++/// Zig never passes a null pointer.
++fn read_bytes<'a>(ptr: *const c_uchar, len: usize) -> Option<&'a [u8]> {
++    (len > 0).then(|| unsafe { std::slice::from_raw_parts(ptr, len) })
 +}

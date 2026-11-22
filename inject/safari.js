@@ -1,5 +1,9 @@
-// Makes the JS-visible identity match a Safari User-Agent.
+// Sets JS navigator properties to match Safari: deletes userAgentData, sets vendor to Apple.
 (function () {
-  try { delete Navigator.prototype.userAgentData; } catch (e) {}
-  try { Object.defineProperty(Navigator.prototype, "vendor", { get: function () { return "Apple Computer, Inc."; }, configurable: true }); } catch (e) {}
+  delete Navigator.prototype.userAgentData;
+
+  Object.defineProperty(Navigator.prototype, "vendor", {
+    get: function () { return "Apple Computer, Inc."; },
+    configurable: true,
+  });
 })();
