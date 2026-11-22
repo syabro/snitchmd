@@ -11,64 +11,56 @@ Converts any URL to clean Markdown. One command, stdout, ready for an LLM prompt
 
 ## How it works
 
-Two-stage pipeline inside a Docker container:
+One binary: [Lightpanda](https://github.com/lightpanda-io/browser), a headless browser, patched to
+connect like Safari 27 (TLS, HTTP/2, User-Agent, JS identity). It runs the page's JavaScript, waits
+until the page settles (30 s cap), then [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura)
+extracts the main content as Markdown, without navigation, footers and banners.
 
-1. **CloakBrowser** — headless Chromium with anti-bot patches: spoofed fingerprints, optional humanized mouse/keyboard, optional Xvfb headed mode, configurable proxy/timezone/locale. Loads the URL and waits.
-2. **rs-trafilatura** — takes the rendered HTML and extracts the main content as Markdown. Boilerplate trim is tunable (favor-precision drops more, favor-recall keeps more); links and images are stripped by default.
+**Output.** Markdown to **stdout**; one summary line to **stderr**: title, extraction quality (0–1),
+character count, and `(cached)` for a cache hit.
 
-**Output.** Markdown to **stdout**; one-line summary to **stderr** with title, extraction quality, char count, and `(cached)` if served from disk.
+**Cache.** Successful fetches are cached on disk by URL + options. `--no-cache` fetches again.
+`--json`, `--html-output` and `--dump-max-bytes` share the cache entry.
 
-**Cache.** Successful fetches are cached on disk by URL + content-affecting flags. Bypass with `--no-cache`. Output-only flags (`--json`, `--html-output`) share a cache entry.
+**Exit codes.** `0` success, `1` error (network, browser, bad option; message on stderr),
+`2` no main content (a loading shell, a wall, or an empty page).
 
-**Exit codes.** `0` success, `1` runtime error (browser, network), `2` extraction returned empty content.
-
-**Bot detection.** Cloudflare, reCAPTCHA v3, FingerprintJS and 30+ other detectors don't flag CloakBrowser as a bot — see [test results](https://github.com/CloakHQ/CloakBrowser#test-results). Interactive "click all the traffic lights" CAPTCHAs (reCAPTCHA v2, hCaptcha) are not solved.
+**Limits.** Passive bot checks (TLS fingerprint, User-Agent, JS identity) pass. Interactive
+CAPTCHAs are not solved; a Cloudflare "Just a moment..." page comes back as the content.
 
 ## Usage
 
 ```bash
 snitchmd https://example.com            # Markdown to stdout
 snitchmd https://example.com > page.md  # save to file
-snitchmd https://example.com --json     # metadata + char count
+snitchmd https://example.com --json     # {url, final_url, title, page_title, page_type, quality, chars, markdown}
 ```
 
-<!-- BEGIN: snitchmd --help -->
+Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
+
 ```text
-Usage: snitchmd URL [options]
-
-Render a web page with CloakBrowser, then convert the HTML to Markdown.
-
-Options:
-  --json                       Output JSON with metadata and markdown
-  --html-output FILE           Also save rendered HTML to this file
-  --no-cache                   Bypass the on-disk cache (forces a fresh fetch)
-  --timeout SECONDS            Page load timeout (default: 45)
-  --wait SECONDS               Extra wait after page load (default: 0)
-  --wait-until STATE           Playwright goto wait condition; one of
-                               commit | domcontentloaded | load | networkidle
-                               (default: domcontentloaded)
-  --wait-for-selector CSS      Wait for a CSS selector before extraction
-  --headful                    Run headed Chromium under Xvfb instead of headless
-  --humanize                   Enable CloakBrowser human-like mouse/keyboard/scroll
-  --proxy URL                  Proxy URL (http://user:pass@host:8080 or socks5://...)
-  --timezone IANA              IANA timezone fingerprint (e.g. Europe/Berlin)
-  --locale TAG                 Browser locale (e.g. en-US)
-  --include-links              Preserve links in extracted Markdown
-  --include-images             Include image references in extracted Markdown
-  --favor-precision            Prefer less boilerplate, even if some content is lost
-                               (mutually exclusive with --favor-recall)
-  --favor-recall               Prefer more content, even if some boilerplate remains
-                               (mutually exclusive with --favor-precision)
-  --max-chars N                Truncate Markdown output to at most N characters
-                               (appends "\n\n[truncated]"). Default: no limit.
-  -h, --help                   Show this message and exit
-```
-<!-- END: snitchmd --help -->
-
-## Installation
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
+  --json                    Markdown with metadata as JSON
+  --no-cache                Fetch again instead of answering from the cache
+  --html-output FILE        Also save the rendered HTML
+  --include-images          Keep image references
+  --favor-precision         Cut more boilerplate, even if some content is lost
+  --favor-recall            Keep more content, even if some boilerplate remains
+  --dump-selector CSS       Extract only from the first matching element
+  --wait-selector CSS       Wait for an element before extracting
+  --wait-ms N               Wait cap in ms (default 30000)
+  --dump-max-bytes N        Cut the Markdown at N bytes, ending with [truncated]
+  --http-proxy URL          Proxy
+  --locale TAG              Browser locale, e.g. en-US
+  --timezone IANA           Time zone, e.g. Europe/Berlin
+  --dump html               Rendered HTML instead of Markdown
 ```
 
-Requires Docker. If install or runtime is broken, see [README troubleshooting](https://github.com/syabro/snitchmd/blob/master/README.md#troubleshooting).
+## When the output is wrong
+
+| Symptom | Try |
+|---|---|
+| Exit 2 or a near-empty result | `--wait-selector` for the content element, or a larger `--wait-ms` |
+| Wrong block extracted | `--dump-selector` with the article's CSS selector |
+| Too much boilerplate | `--favor-precision` |
+| Content missing | `--favor-recall` |
+| Stale result | `--no-cache` |

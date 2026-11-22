@@ -34,7 +34,7 @@ index ec08091d2..81b8b2168 100644
              .url = "https://sqlite.org/2026/sqlite-amalgamation-3530200.zip",
              .hash = "N-V-__8AALc_rgC04POe18O0LKFRm4ouQpLtL3riscEmWp-Q",
 diff --git a/src/Config.zig b/src/Config.zig
-index 7368bdc92..43c3fb8ae 100644
+index 7368bdc92..96b916524 100644
 --- a/src/Config.zig
 +++ b/src/Config.zig
 @@ -469,7 +469,8 @@ pub const Commands = cli.Builder(.{
@@ -47,7 +47,20 @@ index 7368bdc92..43c3fb8ae 100644
              .{ .name = "wait_until", .type = ?WaitUntil },
              .{
                  .name = "wait_script",
-@@ -1102,6 +1103,7 @@ pub const DumpFormat = enum {
+@@ -490,6 +491,12 @@ pub const Commands = cli.Builder(.{
+             .{ .name = "terminate_ms", .type = ?u32 },
+             .{ .name = "json", .type = bool },
+             .{ .name = "metrics", .type = bool },
++            // snitchmd: rs-trafilatura settings and the result cache.
++            .{ .name = "include_images", .type = bool },
++            .{ .name = "favor_precision", .type = bool },
++            .{ .name = "favor_recall", .type = bool },
++            .{ .name = "no_cache", .type = bool },
++            .{ .name = "html_output", .type = ?[]const u8, .path = true },
+         },
+         .shared_options = CommonOptions,
+     },
+@@ -1102,6 +1109,7 @@ pub const DumpFormat = enum {
      semantic_tree,
      semantic_tree_text,
      structured_data,
@@ -55,7 +68,7 @@ index 7368bdc92..43c3fb8ae 100644
  };
  
  pub const Shell = enum { bash, fish, zsh };
-@@ -1351,6 +1353,9 @@ fn printPaged(allocator: Allocator, text: []const u8) void {
+@@ -1351,6 +1359,9 @@ fn printPaged(allocator: Allocator, text: []const u8) void {
      }
  }
  
@@ -65,10 +78,15 @@ index 7368bdc92..43c3fb8ae 100644
  pub fn parseArgs(allocator: Allocator, proc_args: std.process.Args) !Config {
      const exec_name, var command = try Commands.parse(allocator, proc_args);
      const invoked = std.meta.activeTag(command);
-@@ -1393,6 +1398,15 @@ pub fn parseArgs(allocator: Allocator, proc_args: std.process.Args) !Config {
+@@ -1393,6 +1404,20 @@ pub fn parseArgs(allocator: Allocator, proc_args: std.process.Args) !Config {
          return error.MissingArgument;
      }
  
++    if (command == .fetch and command.fetch.favor_precision and command.fetch.favor_recall) {
++        log.fatal(.app, "invalid argument", .{ .arg = "--favor-precision", .conflicts_with = "--favor-recall" });
++        return error.InvalidArgument;
++    }
++
 +    // snitchmd: `snitchmd URL` prints the page's main content as Markdown.
 +    if (command == .fetch) {
 +        command.fetch.dump = command.fetch.dump orelse .markdown;
@@ -81,7 +99,7 @@ index 7368bdc92..43c3fb8ae 100644
      // Agent mode quiets page-driven `console.error` noise unless
      // verbosity=high. Depends on --verbosity/--task, so it can only be
      // resolved after the options are parsed; an explicit --log-level wins.
-@@ -1474,13 +1488,6 @@ test "Config: advertiseHost preserves concrete host when not a wildcard" {
+@@ -1474,13 +1499,6 @@ test "Config: advertiseHost preserves concrete host when not a wildcard" {
      try std.testing.expectEqualStrings("127.0.0.1", config.advertiseHost());
  }
  
@@ -95,7 +113,7 @@ index 7368bdc92..43c3fb8ae 100644
  test "Config: parseArgs --http-version" {
      // parseArgs allocations live for the process; an arena stands in for main's.
      var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-@@ -1849,8 +1856,10 @@ fn accumulateValidator(allocator: Allocator, args: *std.process.Args.Iterator, f
+@@ -1849,8 +1867,10 @@ fn accumulateValidator(allocator: Allocator, args: *std.process.Args.Iterator, f
  
  fn userAgentValidator(allocator: Allocator, args: *std.process.Args.Iterator, ua: *?[]const u8) !void {
      const str = args.next() orelse return error.MissingArgument;
@@ -179,10 +197,10 @@ index 000000000..31a1539be
 +})();
 diff --git a/src/browser/trafilatura.zig b/src/browser/trafilatura.zig
 new file mode 100644
-index 000000000..9a2b7251f
+index 000000000..e1fc1b3c9
 --- /dev/null
 +++ b/src/browser/trafilatura.zig
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,125 @@
 +// snitchmd: `--dump markdown` serializes the rendered DOM to HTML, then
 +// extracts the main content as Markdown with rs-trafilatura (src/rust/trafilatura).
 +// Lightpanda's own whole-page converter stays as `--dump markdown_full`.
@@ -194,11 +212,39 @@ index 000000000..9a2b7251f
 +const RenderTree = @import("RenderTree.zig");
 +const Frame = @import("Frame.zig");
 +
++/// rs-trafilatura settings, plus an optional slot that receives the extraction.
++pub const Opts = struct {
++    include_images: bool = false,
++    favor_precision: bool = false,
++    favor_recall: bool = false,
++    /// snitchmd: filled for the cache, the stderr summary and `--json`.
++    result: ?*Result = null,
++};
++
++/// One page's extraction. Strings are owned by `allocator`.
++pub const Result = struct {
++    allocator: std.mem.Allocator,
++    final_url: []const u8 = "",
++    page_title: ?[]const u8 = null,
++    html: []const u8 = "",
++    markdown: []const u8 = "",
++    title: ?[]const u8 = null,
++    page_type: ?[]const u8 = null,
++    /// Null when the server sent Markdown itself.
++    quality: ?f64 = null,
++};
++
 +/// Writes the page's main content as Markdown extracted by rs-trafilatura.
-+pub fn render(allocator: std.mem.Allocator, state: RenderTree.State, opts: dump.Opts, writer: *std.Io.Writer, frame: *Frame) !void {
++pub fn render(allocator: std.mem.Allocator, state: RenderTree.State, opts: dump.Opts, extract: Opts, writer: *std.Io.Writer, frame: *Frame) !void {
 +    // The server sent Markdown itself: nothing to extract.
 +    if (markdown.markdownSource(state.root) != null) {
-+        return markdown.dump(state, .{ .max_bytes = opts.max_bytes }, writer, frame);
++        const result = extract.result orelse {
++            return markdown.dump(state, .{ .max_bytes = opts.max_bytes }, writer, frame);
++        };
++        var served: std.Io.Writer.Allocating = .init(result.allocator);
++        try markdown.dump(state, .{}, &served.writer, frame);
++        try fill(result, frame, "", std.mem.trim(u8, served.written(), " \t\r\n"), null, null, null);
++        return writeLimited(writer, result.markdown, opts.max_bytes);
 +    }
 +
 +    // max_bytes caps the Markdown below, not the HTML fed to the extractor.
@@ -215,15 +261,36 @@ index 000000000..9a2b7251f
 +        .html_len = bytes.len,
 +        .url_ptr = frame.url.ptr,
 +        .url_len = frame.url.len,
++        .include_images = extract.include_images,
++        .favor_precision = extract.favor_precision,
++        .favor_recall = extract.favor_recall,
 +    });
 +    defer trafilatura_free(out);
 +
 +    // null: no main content, or rs-trafilatura failed (failures are logged to stderr).
-+    const ptr = out.ptr orelse return error.ExtractionEmpty;
++    const md = out.markdown.slice() orelse return error.ExtractionEmpty;
 +
-+    var limited = LimitedWriter.init(writer, opts.max_bytes);
-+    limited.writer.writeAll(ptr[0..out.len]) catch |err| {
-+        // Hit max_bytes: end with the marker the other dumps use.
++    if (extract.result) |result| {
++        try fill(result, frame, bytes, md, out.title.slice(), out.page_type.slice(), out.quality);
++    }
++    return writeLimited(writer, md, opts.max_bytes);
++}
++
++fn fill(result: *Result, frame: *Frame, html: []const u8, md: []const u8, title: ?[]const u8, page_type: ?[]const u8, quality: ?f64) !void {
++    const a = result.allocator;
++    result.final_url = try a.dupe(u8, frame.url);
++    result.page_title = if (try frame.getTitle()) |t| try a.dupe(u8, t) else null;
++    result.html = try a.dupe(u8, html);
++    result.markdown = try a.dupe(u8, md);
++    result.title = if (title) |t| try a.dupe(u8, t) else null;
++    result.page_type = if (page_type) |t| try a.dupe(u8, t) else null;
++    result.quality = quality;
++}
++
++/// Writes `md` and a newline; past `max_bytes` it ends with the marker the other dumps use.
++pub fn writeLimited(writer: *std.Io.Writer, md: []const u8, max_bytes: ?u32) !void {
++    var limited = LimitedWriter.init(writer, max_bytes);
++    limited.writer.writeAll(md) catch |err| {
 +        if (!limited.truncated) return err;
 +        return writer.writeAll(LimitedWriter.truncation_marker);
 +    };
@@ -235,11 +302,26 @@ index 000000000..9a2b7251f
 +    html_len: usize,
 +    url_ptr: [*]const u8,
 +    url_len: usize,
++    include_images: bool,
++    favor_precision: bool,
++    favor_recall: bool,
++};
++
++const Bytes = extern struct {
++    ptr: ?[*]u8,
++    len: usize,
++
++    fn slice(self: Bytes) ?[]const u8 {
++        const ptr = self.ptr orelse return null;
++        return ptr[0..self.len];
++    }
 +};
 +
 +const Output = extern struct {
-+    ptr: ?[*]u8,
-+    len: usize,
++    markdown: Bytes,
++    title: Bytes,
++    page_type: Bytes,
++    quality: f64,
 +};
 +
 +extern "c" fn trafilatura_markdown(input: Input) Output;
@@ -258,10 +340,10 @@ index 5c0bc2bc8..fc879e1f3 100644
      }
      if (protocols.len > 0) {
 diff --git a/src/help.zon b/src/help.zon
-index 1ba73157a..c43cadda9 100644
+index 1ba73157a..245d4e205 100644
 --- a/src/help.zon
 +++ b/src/help.zon
-@@ -101,16 +101,20 @@
+@@ -101,16 +101,22 @@
      \\          Defaults to no cookie saving.
      \\  --dump <DUMP>
      \\          Dumps the document to stdout.
@@ -280,12 +362,54 @@ index 1ba73157a..c43cadda9 100644
      \\                                 with --dump-selector, --wait-selector,
      \\                                 --wait-script or --inject-script,
      \\                                 which need the DOM.
++    \\                                 Exits 2 when the page has no main
++    \\                                 content.
 +    \\              markdown_full      Whole page as Markdown, Lightpanda's
 +    \\                                 own converter.
      \\              pdf                Text-only rendering of the page as a
      \\                                 PDF file (base64 with --json).
      \\              png                Text-only rendering of the page as a
-@@ -183,7 +187,7 @@
+@@ -131,6 +137,16 @@
+     \\          The dump is still written. Navigation and wait failures exit
+     \\          with code 1 regardless of this flag.
+     \\          Defaults to false.
++    \\  --favor-precision
++    \\          Markdown dump: cut more boilerplate, even if some content is lost.
++    \\          Incompatible with --favor-recall.
++    \\  --favor-recall
++    \\          Markdown dump: keep more content, even if some boilerplate remains.
++    \\  --html-output <PATH>
++    \\          Markdown dump: also save the rendered HTML to this file. Skips the
++    \\          cache lookup.
++    \\  --include-images
++    \\          Markdown dump: keep image references.
+     \\  --inject-script <EXPR>
+     \\          JavaScript to execute as the document's <head> is parsed, before any
+     \\          other scripts in the page run. Can be passed multiple times; scripts
+@@ -146,6 +162,9 @@
+     \\          "error" field: null, or the name of the navigation, wait or
+     \\          dump failure for that URL. One failed URL does not stop the
+     \\          others; the process exits 1 if any URL failed.
++    \\          A markdown dump of one URL prints instead {{"url", "final_url",
++    \\          "title", "page_title", "page_type", "quality", "chars", "markdown"}},
++    \\          plus "truncated" and "full_chars" when --dump-max-bytes cuts it.
+     \\  --markdown-alternate
+     \\          With --dump markdown, when a page links a markdown version of
+     \\          itself (<link rel="alternate" type="text/markdown">), dump that
+@@ -156,6 +175,12 @@
+     \\          .md files that way). The alternate's URL is logged; with
+     \\          --json, "url" is where the markdown came from. The alternate
+     \\          loads within what is left of --wait-ms. Defaults to false.
++    \\  --no-cache
++    \\          Markdown dump of one URL: fetch again instead of answering from the
++    \\          cache. Results are cached in $SNITCHMD_CACHE_DIR, else
++    \\          $XDG_CACHE_HOME/snitchmd, else ~/.cache/snitchmd, keyed by the
++    \\          URL and every option except --json, --no-cache, --html-output and
++    \\          --dump-max-bytes.
+     \\  --metrics
+     \\          Write metrics (Prometheus text format) to stdout on exit, after
+     \\          any --dump output.
+@@ -183,7 +208,7 @@
      \\          Defaults to no terminate.
      \\  --wait-ms <INT>
      \\          Wait time in milliseconds. Supersedes all other --wait parameters.
@@ -294,7 +418,7 @@ index 1ba73157a..c43cadda9 100644
      \\  --wait-script <EXPR>
      \\          Wait for a JavaScript expression to return truthy. Checked after
      \\          --wait-until condition is met.
-@@ -209,10 +213,8 @@
+@@ -209,10 +234,8 @@
      \\                                started, ignoring intervals, long timeouts,
      \\                                idle callbacks and WebSocket traffic.
      \\                                Resolves at load when load started nothing.
@@ -307,7 +431,7 @@ index 1ba73157a..c43cadda9 100644
      \\  --with-base
      \\          Add a <base> tag in dump.
      \\          Defaults to false.
-@@ -649,9 +651,9 @@
+@@ -649,9 +672,9 @@
      \\          Time zone used by Date and Intl, e.g. Europe/Paris or UTC.
      \\          Defaults to the host time zone.
      \\  --user-agent <STRING>
@@ -321,7 +445,7 @@ index 1ba73157a..c43cadda9 100644
      \\          Suffix appended to the Lightpanda/X.Y User-Agent.
      \\  --v8-flags-unsafe <FLAGS>
 diff --git a/src/lightpanda.zig b/src/lightpanda.zig
-index 5dfe5aa70..d5c146a67 100644
+index 5dfe5aa70..df69d6098 100644
 --- a/src/lightpanda.zig
 +++ b/src/lightpanda.zig
 @@ -66,6 +66,7 @@ pub const actions = @import("browser/actions.zig");
@@ -332,7 +456,16 @@ index 5dfe5aa70..d5c146a67 100644
  pub const screenshot = @import("browser/screenshot.zig");
  pub const RenderTree = @import("browser/RenderTree.zig");
  pub const interactive = @import("browser/interactive.zig");
-@@ -243,7 +244,7 @@ pub fn fetch(app: *App, browser: *Browser, urls: []const [:0]const u8, opts: Fet
+@@ -178,6 +179,8 @@ pub const FetchOpts = struct {
+     /// Dump a page's `<link rel="alternate" type="text/markdown">` instead of
+     /// converting the page, when that link loads as markdown.
+     markdown_alternate: bool = false,
++    /// rs-trafilatura settings for `--dump markdown`.
++    extract: trafilatura.Opts = .{},
+     writer: ?*std.Io.Writer = null,
+     json: bool = false,
+ };
+@@ -243,7 +246,7 @@ pub fn fetch(app: *App, browser: *Browser, urls: []const [:0]const u8, opts: Fet
      }
  
      // Stash scripts user want to inject.
@@ -341,17 +474,17 @@ index 5dfe5aa70..d5c146a67 100644
  
      // One page per url. `PageHandle.frame()` always re-resolves the live frame,
      // so the handles stay valid across navigate / wait. The Runner's wait paths
-@@ -549,7 +550,8 @@ fn dumpContent(app: *App, mode: Config.DumpFormat, opts: FetchOpts, frame: *Fram
+@@ -549,7 +552,8 @@ fn dumpContent(app: *App, mode: Config.DumpFormat, opts: FetchOpts, frame: *Fram
      const state = try RenderTree.resolve(arena.allocator(), try dumpRoot(frame, opts.selector), opts.dump.strip, frame);
      switch (mode) {
          .html => try dump.render(state, opts.dump, writer, frame),
 -        .markdown => try markdown.dump(state, .{ .max_bytes = opts.dump.max_bytes }, writer, frame),
-+        .markdown => try trafilatura.render(arena.allocator(), state, opts.dump, writer, frame),
++        .markdown => try trafilatura.render(arena.allocator(), state, opts.dump, opts.extract, writer, frame),
 +        .markdown_full => try markdown.dump(state, .{ .max_bytes = opts.dump.max_bytes }, writer, frame),
          .png => {
              _ = try screenshot.png(arena.allocator(), state, pngOpts(frame), writer, frame);
          },
-@@ -854,7 +856,8 @@ test "fetch: a markdown dump asks the server for markdown" {
+@@ -854,7 +858,8 @@ test "fetch: a markdown dump asks the server for markdown" {
  
      aw.clearRetainingCapacity();
      try dumpContent(testing.test_app, .markdown, .{ .dump = .{} }, not_asked.frame().?, false, &aw.writer);
@@ -362,10 +495,18 @@ index 5dfe5aa70..d5c146a67 100644
      // Injected scripts run against the DOM too.
      var scripts: std.ArrayList([]const u8) = .empty;
 diff --git a/src/main.zig b/src/main.zig
-index 68a3ba101..e914fb8af 100644
+index 68a3ba101..fe040a306 100644
 --- a/src/main.zig
 +++ b/src/main.zig
-@@ -193,8 +193,8 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+@@ -24,6 +24,7 @@ const log = lp.log;
+ const App = lp.App;
+ const Config = lp.Config;
+ const SigHandler = @import("Sighandler.zig");
++const snitchmd = @import("snitchmd.zig");
+ pub const panic = lp.crash_handler.panic;
+ 
+ pub const std_options: std.Options = .{
+@@ -193,8 +194,8 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
                  log.fatal(.app, "--dump-max-bytes needs --dump", .{});
                  return error.InvalidArgument;
              }
@@ -376,6 +517,50 @@ index 68a3ba101..e914fb8af 100644
                  return error.InvalidArgument;
              }
              if (opts.markdown_alternate and opts.dump != .markdown) {
+@@ -222,6 +223,11 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+                     .with_frames = opts.with_frames,
+                     .max_bytes = opts.dump_max_bytes,
+                 },
++                .extract = .{
++                    .include_images = opts.include_images,
++                    .favor_precision = opts.favor_precision,
++                    .favor_recall = opts.favor_recall,
++                },
+                 .json = opts.json,
+             };
+ 
+@@ -230,6 +236,18 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+                 fetch_opts.writer = &writer.interface;
+             }
+ 
++            // snitchmd: the Markdown is collected here and printed by snitchmd.finish.
++            const snitch = snitchmd.applies(opts);
++            var discard = std.Io.Writer.Discarding.init(&.{});
++            var result: lp.trafilatura.Result = .{ .allocator = main_arena };
++            if (snitch) {
++                if (try snitchmd.printCached(main_arena, opts, proc_args)) return;
++                fetch_opts.writer = &discard.writer;
++                fetch_opts.json = false;
++                fetch_opts.dump.max_bytes = null;
++                fetch_opts.extract.result = &result;
++            }
++
+             // Browser owns a V8 isolate, which has thread affinity — it must
+             // be init/used/deinit on the same thread (fetchThread, below). So
+             // we can't treat Browser like the above serve path treats Server.
+@@ -244,7 +262,11 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+             var fetch_err: ?anyerror = null;
+             var worker_thread = try std.Thread.spawn(.{}, fetchThread, .{ app, &ft, urls, fetch_opts, &fetch_err });
+             worker_thread.join();
+-            if (fetch_err) |err| return err;
++            if (fetch_err) |err| {
++                if (snitch and err == error.ExtractionEmpty) std.process.exit(snitchmd.exit_empty);
++                return err;
++            }
++            if (snitch) try snitchmd.finish(main_arena, &result, opts, proc_args);
+         },
+         .mcp => |opts| {
+             log.info(.mcp, "starting server", .{});
 diff --git a/src/network/HttpClient.zig b/src/network/HttpClient.zig
 index 1a1163a86..b69c08c1b 100644
 --- a/src/network/HttpClient.zig
@@ -1412,12 +1597,12 @@ index 000000000..c4c2d8242
 +rs-trafilatura = { git = "https://github.com/Murrough-Foley/rs-trafilatura", rev = "2a4f56eef84cca2d319d27c9108373d593110355", version = "0.2.2" }
 diff --git a/src/rust/trafilatura/src/lib.rs b/src/rust/trafilatura/src/lib.rs
 new file mode 100644
-index 000000000..e104593ee
+index 000000000..2040b4b14
 --- /dev/null
 +++ b/src/rust/trafilatura/src/lib.rs
-@@ -0,0 +1,86 @@
+@@ -0,0 +1,117 @@
 +// snitchmd: extracts a page's main content as Markdown with rs-trafilatura
-+// for `--dump main_markdown`.
++// for `--dump markdown`.
 +
 +use rs_trafilatura::{extract_with_options, Options};
 +use std::os::raw::c_uchar;
@@ -1429,20 +1614,34 @@ index 000000000..e104593ee
 +    pub html_len: usize,
 +    pub url_ptr: *const c_uchar,
 +    pub url_len: usize,
++    pub include_images: bool,
++    pub favor_precision: bool,
++    pub favor_recall: bool,
 +}
 +
-+/// Markdown returned to Zig; freed with `trafilatura_free`.
++/// Bytes owned by Rust; a null `ptr` means absent.
 +#[repr(C)]
-+pub struct TrafilaturaOutput {
++pub struct TrafilaturaBytes {
 +    pub ptr: *mut c_uchar,
 +    pub len: usize,
 +}
 +
-+/// Extracts the main content as Markdown. A null `ptr` means no main content
-+/// was found or extraction failed (failures go to stderr).
++/// Extraction returned to Zig; freed with `trafilatura_free`.
++#[repr(C)]
++pub struct TrafilaturaOutput {
++    /// Null when no main content was found or extraction failed.
++    pub markdown: TrafilaturaBytes,
++    pub title: TrafilaturaBytes,
++    pub page_type: TrafilaturaBytes,
++    /// rs-trafilatura's extraction quality, 0.0 - 1.0.
++    pub quality: f64,
++}
++
++/// Extracts the main content as Markdown. Failures go to stderr and return a
++/// null `markdown`.
 +#[no_mangle]
 +pub extern "C" fn trafilatura_markdown(input: TrafilaturaInput) -> TrafilaturaOutput {
-+    let empty = TrafilaturaOutput { ptr: std::ptr::null_mut(), len: 0 };
++    let empty = TrafilaturaOutput { markdown: none(), title: none(), page_type: none(), quality: 0.0 };
 +
 +    // Empty HTML input.
 +    let Some(html) = read_bytes(input.html_ptr, input.html_len) else {
@@ -1459,18 +1658,21 @@ index 000000000..e104593ee
 +        include_tables: true,
 +        include_links: true,
 +        include_formatting: true,
-+        include_images: false,
++        include_images: input.include_images,
++        favor_precision: input.favor_precision,
++        favor_recall: input.favor_recall,
 +        ..Options::default()
 +    };
 +
-+    let markdown = match extract_with_options(&html, &options) {
-+        Ok(r) => r.content_markdown.unwrap_or(r.content_text),
++    let result = match extract_with_options(&html, &options) {
++        Ok(r) => r,
 +        Err(e) => {
 +            eprintln!("trafilatura failed for {:?}: {e}", options.url);
 +            return empty;
 +        }
 +    };
 +
++    let markdown = result.content_markdown.unwrap_or(result.content_text);
 +    let markdown = markdown.trim();
 +
 +    // The page has no main content.
@@ -1478,29 +1680,234 @@ index 000000000..e104593ee
 +        return empty;
 +    }
 +
-+    let mut boxed = markdown.as_bytes().to_vec().into_boxed_slice();
-+    let out = TrafilaturaOutput { ptr: boxed.as_mut_ptr(), len: boxed.len() };
-+    // Ownership moves to Zig; trafilatura_free rebuilds the Box and frees it.
-+    std::mem::forget(boxed);
-+    out
++    TrafilaturaOutput {
++        markdown: give(markdown),
++        title: result.metadata.title.as_deref().map_or_else(none, give),
++        page_type: result.metadata.page_type.as_deref().map_or_else(none, give),
++        quality: result.extraction_quality,
++    }
 +}
 +
-+/// Frees Markdown returned by `trafilatura_markdown`. A null output is a no-op.
++/// Frees everything in an output of `trafilatura_markdown`.
 +#[no_mangle]
 +pub extern "C" fn trafilatura_free(out: TrafilaturaOutput) {
-+    if out.ptr.is_null() {
-+        return;
++    for bytes in [out.markdown, out.title, out.page_type] {
++        if bytes.ptr.is_null() {
++            continue;
++        }
++        unsafe {
++            drop(Box::from_raw(std::slice::from_raw_parts_mut(bytes.ptr, bytes.len)));
++        }
 +    }
++}
 +
-+    unsafe {
-+        drop(Box::from_raw(std::slice::from_raw_parts_mut(out.ptr, out.len)));
-+    }
++fn none() -> TrafilaturaBytes {
++    TrafilaturaBytes { ptr: std::ptr::null_mut(), len: 0 }
++}
++
++/// Moves a copy of `s` to Zig; trafilatura_free rebuilds the Box and frees it.
++fn give(s: &str) -> TrafilaturaBytes {
++    let mut boxed = s.as_bytes().to_vec().into_boxed_slice();
++    let out = TrafilaturaBytes { ptr: boxed.as_mut_ptr(), len: boxed.len() };
++    std::mem::forget(boxed);
++    out
 +}
 +
 +/// Turns a pointer and length from Zig into a byte slice; None when the length is 0.
 +/// Zig never passes a null pointer.
 +fn read_bytes<'a>(ptr: *const c_uchar, len: usize) -> Option<&'a [u8]> {
 +    (len > 0).then(|| unsafe { std::slice::from_raw_parts(ptr, len) })
++}
+diff --git a/src/snitchmd.zig b/src/snitchmd.zig
+new file mode 100644
+index 000000000..caa15a0d5
+--- /dev/null
++++ b/src/snitchmd.zig
+@@ -0,0 +1,185 @@
++// snitchmd: what `snitchmd URL` adds around a Markdown dump of one URL —
++// the result cache, the stderr summary, `--json` in the snitchmd v1 format,
++// `--html-output` and exit code 2 for a page without main content.
++
++const std = @import("std");
++const lp = @import("lightpanda");
++
++const log = lp.log;
++const Config = lp.Config;
++const Result = lp.trafilatura.Result;
++const LimitedWriter = lp.LimitedWriter;
++const Sha256 = std.crypto.hash.sha2.Sha256;
++
++const Fetch = @FieldType(Config.Mode, "fetch");
++
++/// Exit code for a page without main content, as in snitchmd v1.
++pub const exit_empty = 2;
++
++/// Output written for one URL; also the cache file format.
++const Payload = struct {
++    url: []const u8,
++    final_url: []const u8,
++    title: ?[]const u8,
++    page_title: ?[]const u8,
++    page_type: ?[]const u8,
++    quality: ?f64,
++    chars: usize,
++    markdown: []const u8,
++};
++
++/// A Markdown dump of one URL gets the snitchmd treatment; anything else is
++/// plain Lightpanda.
++pub fn applies(opts: Fetch) bool {
++    return opts.dump == .markdown and opts.url.items.len == 1 and !opts.markdown_alternate;
++}
++
++/// Prints the cached result and returns true, or returns false on a miss.
++/// `--html-output` needs the HTML, which is not cached, so it always misses.
++pub fn printCached(arena: std.mem.Allocator, opts: Fetch, proc_args: std.process.Args) !bool {
++    if (opts.no_cache or opts.html_output != null) return false;
++    const path = try cacheFile(arena, proc_args) orelse return false;
++    const data = std.Io.Dir.cwd().readFileAlloc(lp.io, path, arena, .unlimited) catch return false;
++    const payload = std.json.parseFromSliceLeaky(Payload, arena, data, .{ .ignore_unknown_fields = true }) catch {
++        log.warn(.app, "snitchmd cache unreadable", .{ .path = path });
++        return false;
++    };
++    try print(arena, payload, opts, true);
++    return true;
++}
++
++/// Saves `--html-output`, caches the result and prints it.
++pub fn finish(arena: std.mem.Allocator, result: *const Result, opts: Fetch, proc_args: std.process.Args) !void {
++    const payload: Payload = .{
++        .url = opts.url.items[0],
++        .final_url = result.final_url,
++        .title = result.title orelse result.page_title,
++        .page_title = result.page_title,
++        .page_type = result.page_type,
++        .quality = result.quality,
++        .chars = charCount(result.markdown),
++        .markdown = result.markdown,
++    };
++
++    if (opts.html_output) |path| {
++        try std.Io.Dir.cwd().writeFile(lp.io, .{ .sub_path = path, .data = result.html });
++    }
++
++    // The cache is best-effort.
++    cachePut(arena, payload, proc_args) catch |err| {
++        log.warn(.app, "snitchmd cache write failed", .{ .err = err });
++    };
++
++    try print(arena, payload, opts, false);
++}
++
++fn print(arena: std.mem.Allocator, payload: Payload, opts: Fetch, cached: bool) !void {
++    const shown = try truncate(arena, payload.markdown, opts.dump_max_bytes);
++    const truncated = shown.len != payload.markdown.len;
++
++    var out_buf: [4096]u8 = undefined;
++    var out = std.Io.File.stdout().writerStreaming(lp.io, &out_buf);
++    const stdout = &out.interface;
++    if (opts.json) {
++        var shown_payload = payload;
++        shown_payload.markdown = shown;
++        shown_payload.chars = charCount(shown);
++        var jws: std.json.Stringify = .{ .writer = stdout, .options = .{ .whitespace = .indent_2 } };
++        try jws.beginObject();
++        inline for (@typeInfo(Payload).@"struct".field_names) |name| {
++            try jws.objectField(name);
++            try jws.write(@field(shown_payload, name));
++        }
++        if (truncated) {
++            try jws.objectField("full_chars");
++            try jws.write(payload.chars);
++            try jws.objectField("truncated");
++            try jws.write(true);
++        }
++        try jws.endObject();
++        try stdout.writeByte('\n');
++    } else {
++        try stdout.writeAll(shown);
++        try stdout.writeByte('\n');
++    }
++    try stdout.flush();
++
++    var err_buf: [1024]u8 = undefined;
++    var err_out = std.Io.File.stderr().writerStreaming(lp.io, &err_buf);
++    const stderr = &err_out.interface;
++    try stderr.print("snitchmd: title={f} quality=", .{std.json.fmt(payload.title, .{})});
++    if (payload.quality) |q| try stderr.print("{d:.2}", .{q}) else try stderr.writeAll("null");
++    try stderr.print(" chars={d}", .{charCount(shown)});
++    if (truncated) try stderr.print(" truncated_from={d}", .{payload.chars});
++    if (cached) try stderr.writeAll(" (cached)");
++    try stderr.writeByte('\n');
++    try stderr.flush();
++}
++
++/// Cuts `markdown` to `max_bytes` at a UTF-8 boundary and appends the marker
++/// the other dumps use.
++fn truncate(arena: std.mem.Allocator, markdown: []const u8, max_bytes: ?u32) ![]const u8 {
++    const max = max_bytes orelse return markdown;
++    if (markdown.len <= max) return markdown;
++    var end: usize = max;
++    while (end > 0 and markdown[end] & 0xC0 == 0x80) end -= 1;
++    return std.mem.concat(arena, u8, &.{ markdown[0..end], std.mem.trimEnd(u8, LimitedWriter.truncation_marker, "\n") });
++}
++
++/// Characters, not bytes, as snitchmd v1 reported them.
++fn charCount(s: []const u8) usize {
++    return std.unicode.utf8CountCodepoints(s) catch s.len;
++}
++
++fn cachePut(arena: std.mem.Allocator, payload: Payload, proc_args: std.process.Args) !void {
++    const path = try cacheFile(arena, proc_args) orelse return;
++    try std.Io.Dir.cwd().createDirPath(lp.io, std.fs.path.dirname(path).?);
++    var file = try std.Io.Dir.cwd().createFileAtomic(lp.io, path, .{ .replace = true });
++    defer file.deinit(lp.io);
++    var buf: [8192]u8 = undefined;
++    var writer = file.file.writer(lp.io, &buf);
++    try std.json.Stringify.value(payload, .{}, &writer.interface);
++    try writer.end();
++    try file.replace(lp.io);
++}
++
++/// `<cache dir>/<sha256 of the arguments>.json`, or null without a home directory.
++/// Output-only options are left out of the key.
++fn cacheFile(arena: std.mem.Allocator, proc_args: std.process.Args) !?[]const u8 {
++    const dir = try cacheDir(arena) orelse return null;
++
++    var hasher = Sha256.init(.{});
++    hasher.update("snitchmd-cache-1");
++
++    var args = std.process.Args.Iterator.init(proc_args);
++    defer args.deinit();
++    _ = args.skip(); // executable name
++    while (args.next()) |arg| {
++        if (isOneOf(arg, &.{ "--json", "--no-cache" })) continue;
++        if (isOneOf(arg, &.{ "--html-output", "--dump-max-bytes" })) {
++            _ = args.skip();
++            continue;
++        }
++        hasher.update(arg);
++        hasher.update("\x00");
++    }
++
++    var digest: [Sha256.digest_length]u8 = undefined;
++    hasher.final(&digest);
++    const name = try std.fmt.allocPrint(arena, "{s}.json", .{&std.fmt.bytesToHex(digest, .lower)});
++    return try std.fs.path.join(arena, &.{ dir, name });
++}
++
++fn cacheDir(arena: std.mem.Allocator) !?[]const u8 {
++    if (std.c.getenv("SNITCHMD_CACHE_DIR")) |dir| return std.mem.span(dir);
++    if (std.c.getenv("XDG_CACHE_HOME")) |dir| return try std.fs.path.join(arena, &.{ std.mem.span(dir), "snitchmd" });
++    const home = std.c.getenv("HOME") orelse return null;
++    return try std.fs.path.join(arena, &.{ std.mem.span(home), ".cache", "snitchmd" });
++}
++
++fn isOneOf(arg: []const u8, names: []const []const u8) bool {
++    for (names) |name| {
++        if (std.mem.eql(u8, arg, name)) return true;
++    }
++    return false;
 +}
 diff --git a/src/sys/libcurl.zig b/src/sys/libcurl.zig
 index 08c399d59..e732ca68a 100644
