@@ -12,6 +12,21 @@ The engine is [Lightpanda](https://github.com/lightpanda-io/browser) patched to:
 
 The previous Docker + CloakBrowser version lives on the `v1` branch.
 
+## Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
+```
+
+Prebuilt for macOS arm64 and Linux x86_64 (glibc 2.38+). Uninstall:
+`curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash -s -- --uninstall`.
+
+For an agent:
+
+```text
+read https://github.com/syabro/snitchmd/blob/master/README.md, install https://raw.githubusercontent.com/syabro/snitchmd/master/skills/snitchmd/SKILL.md, then show me a couple of usage examples.
+```
+
 ## Build
 
 Needs Zig 0.17, Rust (cargo), git, curl, make.
@@ -20,6 +35,9 @@ Needs Zig 0.17, Rust (cargo), git, curl, make.
 ./build.sh            # fetch pinned sources, patch, build → dist/snitchmd (~8 min)
 ./build.sh prepare    # fetch and patch into build/ without building
 ```
+
+`just release VERSION` builds macOS arm64 here and Linux x86_64 on pc.local, tags, and publishes
+both binaries as a GitHub release with notes from CHANGELOG.md.
 
 Pinned versions are in `versions.env`. Patches:
 

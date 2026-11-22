@@ -5,6 +5,30 @@ All notable changes to snitchmd are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] — 2026-11-22
+
+One binary instead of a Docker image: patched Lightpanda in place of CloakBrowser (Chromium).
+
+### Changed
+
+- Engine: [Lightpanda](https://github.com/lightpanda-io/browser) with Safari 27's TLS and HTTP/2
+  fingerprint (curl-impersonate), Safari User-Agent and JS identity; rs-trafilatura built in.
+- Install: a prebuilt binary (macOS arm64, Linux x86_64 with glibc 2.38+); no Docker.
+- Options are Lightpanda's `fetch` options: `--wait-selector` (was `--wait-for-selector`),
+  `--dump-selector` (was `--content-selector`), `--dump-max-bytes` in bytes (was `--max-chars`),
+  `--http-proxy` (was `--proxy`), `--wait-ms` (was `--timeout` and `--wait`); `--wait-until`
+  takes Lightpanda's values.
+
+### Kept
+
+- Result cache and `--no-cache`, stderr summary, `--json` fields, `--html-output`,
+  `--include-images`, `--favor-precision`, `--favor-recall`, exit code 2 for no main content.
+
+### Removed
+
+- `--headful`, `--humanize`: Chromium features.
+- `--include-links`: links were always kept in Markdown output.
+
 ## [0.2.1] — 2026-06-07
 
 ### Added

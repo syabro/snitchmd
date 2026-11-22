@@ -64,3 +64,11 @@ Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
 | Too much boilerplate | `--favor-precision` |
 | Content missing | `--favor-recall` |
 | Stale result | `--no-cache` |
+
+## Installation
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
+```
+
+Prebuilt for macOS arm64 and Linux x86_64 (glibc 2.38+).
