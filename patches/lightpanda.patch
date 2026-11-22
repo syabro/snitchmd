@@ -34,7 +34,7 @@ index ec08091d2..81b8b2168 100644
              .url = "https://sqlite.org/2026/sqlite-amalgamation-3530200.zip",
              .hash = "N-V-__8AALc_rgC04POe18O0LKFRm4ouQpLtL3riscEmWp-Q",
 diff --git a/src/Config.zig b/src/Config.zig
-index 7368bdc92..d1e5c8590 100644
+index 7368bdc92..43c3fb8ae 100644
 --- a/src/Config.zig
 +++ b/src/Config.zig
 @@ -469,7 +469,8 @@ pub const Commands = cli.Builder(.{
@@ -95,36 +95,19 @@ index 7368bdc92..d1e5c8590 100644
  test "Config: parseArgs --http-version" {
      // parseArgs allocations live for the process; an arena stands in for main's.
      var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-@@ -1641,8 +1648,7 @@ test "Config: parseArgs tells a url from a misspelt command" {
+@@ -1849,8 +1856,10 @@ fn accumulateValidator(allocator: Allocator, args: *std.process.Args.Iterator, f
  
- test "Config: validateUserAgent" {
-     try validateUserAgent("Lightpanda/1.0");
--    try std.testing.expectError(error.Reserved, validateUserAgent("mozilla/1.0"));
--    try std.testing.expectError(error.Reserved, validateUserAgent("Mozilla/5.0"));
-+    try validateUserAgent("Mozilla/5.0");
-     try std.testing.expectError(error.NonPrintable, validateUserAgent("bad\x01ua"));
- }
+ fn userAgentValidator(allocator: Allocator, args: *std.process.Args.Iterator, ua: *?[]const u8) !void {
+     const str = args.next() orelse return error.MissingArgument;
+-    validateUserAgent(str) catch |err| {
+-        log.fatal(.app, "invalid user-agent", .{ .err = err, .hint = "must be printable ASCII and can't contain Mozilla" });
++    // snitchmd: the CLI accepts browser user-agents ("Mozilla/..."); page
++    // scripts and CDP still cannot set one.
++    validateUserAgent(str) catch |err| if (err != error.Reserved) {
++        log.fatal(.app, "invalid user-agent", .{ .err = err, .hint = "must be printable ASCII" });
+         return error.InvalidArgument;
+     };
  
-@@ -1857,16 +1863,14 @@ fn userAgentValidator(allocator: Allocator, args: *std.process.Args.Iterator, ua
-     ua.* = try allocator.dupe(u8, str);
- }
- 
--pub fn validateUserAgent(ua: []const u8) !void {
-+// impersonate: allows browser user-agents ("Mozilla/..."); keeps error.Reserved
-+// in the set because callers switch on it.
-+pub fn validateUserAgent(ua: []const u8) error{ NonPrintable, Reserved }!void {
-     for (ua) |c| {
-         if (!std.ascii.isPrint(c)) {
-             return error.NonPrintable;
-         }
-     }
--
--    if (std.ascii.findIgnoreCase(ua, "mozilla") != null) {
--        return error.Reserved;
--    }
- }
- 
- fn localeValidator(allocator: Allocator, args: *std.process.Args.Iterator, field: *[:0]const u8) !void {
 diff --git a/src/browser/Session.zig b/src/browser/Session.zig
 index e6e927035..eaf2e87fc 100644
 --- a/src/browser/Session.zig
