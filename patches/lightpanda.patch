@@ -340,7 +340,7 @@ index 5c0bc2bc8..fc879e1f3 100644
      }
      if (protocols.len > 0) {
 diff --git a/src/help.zon b/src/help.zon
-index 1ba73157a..245d4e205 100644
+index 1ba73157a..423490a78 100644
 --- a/src/help.zon
 +++ b/src/help.zon
 @@ -101,16 +101,22 @@
@@ -431,6 +431,15 @@ index 1ba73157a..245d4e205 100644
      \\  --with-base
      \\          Add a <base> tag in dump.
      \\          Defaults to false.
+@@ -629,7 +652,7 @@
+     \\          Allowed values: "pretty", "logfmt".
+     \\  --log-level <LEVEL>
+     \\          The log level.
+-    \\          Defaults to {1s}.
++    \\          Defaults to {1s}; fetch defaults to "error".
+     \\          Allowed values: "debug", "info", "warn", "error", "fatal".
+     \\  --obey-robots
+     \\          Fetches and obeys robots.txt of the target page.
 @@ -649,9 +672,9 @@
      \\          Time zone used by Date and Intl, e.g. Europe/Paris or UTC.
      \\          Defaults to the host time zone.
@@ -495,7 +504,7 @@ index 5dfe5aa70..df69d6098 100644
      // Injected scripts run against the DOM too.
      var scripts: std.ArrayList([]const u8) = .empty;
 diff --git a/src/main.zig b/src/main.zig
-index 68a3ba101..fe040a306 100644
+index 68a3ba101..a390fcc4a 100644
 --- a/src/main.zig
 +++ b/src/main.zig
 @@ -24,6 +24,7 @@ const log = lp.log;
@@ -529,12 +538,14 @@ index 68a3ba101..fe040a306 100644
                  .json = opts.json,
              };
  
-@@ -230,6 +236,18 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+@@ -230,6 +236,20 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
                  fetch_opts.writer = &writer.interface;
              }
  
 +            // snitchmd: the Markdown is collected here and printed by snitchmd.finish.
 +            const snitch = snitchmd.applies(opts);
++            // stderr keeps errors and the summary; --log-level wins.
++            if (opts.log_level == null) log.opts.level = .err;
 +            var discard = std.Io.Writer.Discarding.init(&.{});
 +            var result: lp.trafilatura.Result = .{ .allocator = main_arena };
 +            if (snitch) {
@@ -548,7 +559,7 @@ index 68a3ba101..fe040a306 100644
              // Browser owns a V8 isolate, which has thread affinity — it must
              // be init/used/deinit on the same thread (fetchThread, below). So
              // we can't treat Browser like the above serve path treats Server.
-@@ -244,7 +262,11 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+@@ -244,7 +264,11 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
              var fetch_err: ?anyerror = null;
              var worker_thread = try std.Thread.spawn(.{}, fetchThread, .{ app, &ft, urls, fetch_opts, &fetch_err });
              worker_thread.join();
