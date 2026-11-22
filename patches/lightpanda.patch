@@ -34,18 +34,54 @@ index ec08091d2..81b8b2168 100644
              .url = "https://sqlite.org/2026/sqlite-amalgamation-3530200.zip",
              .hash = "N-V-__8AALc_rgC04POe18O0LKFRm4ouQpLtL3riscEmWp-Q",
 diff --git a/src/Config.zig b/src/Config.zig
-index 7368bdc92..f183306e4 100644
+index 7368bdc92..d1e5c8590 100644
 --- a/src/Config.zig
 +++ b/src/Config.zig
-@@ -1096,6 +1096,7 @@ pub fn customCertStore(self: *const Config) ?*crypto.X509_STORE {
- pub const DumpFormat = enum {
-     html,
-     markdown,
-+    main_markdown,
-     png,
-     pdf,
-     wpt,
-@@ -1474,13 +1475,6 @@ test "Config: advertiseHost preserves concrete host when not a wildcard" {
+@@ -469,7 +469,8 @@ pub const Commands = cli.Builder(.{
+             .{ .name = "dump_max_bytes", .type = ?u32 },
+             .{ .name = "fail_on_http_error", .type = bool },
+             .{ .name = "markdown_alternate", .type = bool },
+-            .{ .name = "wait_ms", .type = u32, .default = 5_000 },
++            // snitchmd: JS anti-bot checks (e.g. Cloudflare) can take up to 30 s.
++            .{ .name = "wait_ms", .type = u32, .default = 30_000 },
+             .{ .name = "wait_until", .type = ?WaitUntil },
+             .{
+                 .name = "wait_script",
+@@ -1102,6 +1103,7 @@ pub const DumpFormat = enum {
+     semantic_tree,
+     semantic_tree_text,
+     structured_data,
++    markdown_full,
+ };
+ 
+ pub const Shell = enum { bash, fish, zsh };
+@@ -1351,6 +1353,9 @@ fn printPaged(allocator: Allocator, text: []const u8) void {
+     }
+ }
+ 
++// snitchmd: Safari 27.0, matching the safari270 TLS fingerprint in http.zig.
++const safari_user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15";
++
+ pub fn parseArgs(allocator: Allocator, proc_args: std.process.Args) !Config {
+     const exec_name, var command = try Commands.parse(allocator, proc_args);
+     const invoked = std.meta.activeTag(command);
+@@ -1393,6 +1398,15 @@ pub fn parseArgs(allocator: Allocator, proc_args: std.process.Args) !Config {
+         return error.MissingArgument;
+     }
+ 
++    // snitchmd: `snitchmd URL` prints the page's main content as Markdown.
++    if (command == .fetch) {
++        command.fetch.dump = command.fetch.dump orelse .markdown;
++        command.fetch.wait_until = command.fetch.wait_until orelse .done;
++        if (command.fetch.user_agent_suffix == null) {
++            command.fetch.user_agent = command.fetch.user_agent orelse safari_user_agent;
++        }
++    }
++
+     // Agent mode quiets page-driven `console.error` noise unless
+     // verbosity=high. Depends on --verbosity/--task, so it can only be
+     // resolved after the options are parsed; an explicit --log-level wins.
+@@ -1474,13 +1488,6 @@ test "Config: advertiseHost preserves concrete host when not a wildcard" {
      try std.testing.expectEqualStrings("127.0.0.1", config.advertiseHost());
  }
  
@@ -59,7 +95,7 @@ index 7368bdc92..f183306e4 100644
  test "Config: parseArgs --http-version" {
      // parseArgs allocations live for the process; an arena stands in for main's.
      var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-@@ -1641,8 +1635,7 @@ test "Config: parseArgs tells a url from a misspelt command" {
+@@ -1641,8 +1648,7 @@ test "Config: parseArgs tells a url from a misspelt command" {
  
  test "Config: validateUserAgent" {
      try validateUserAgent("Lightpanda/1.0");
@@ -69,7 +105,7 @@ index 7368bdc92..f183306e4 100644
      try std.testing.expectError(error.NonPrintable, validateUserAgent("bad\x01ua"));
  }
  
-@@ -1857,16 +1850,14 @@ fn userAgentValidator(allocator: Allocator, args: *std.process.Args.Iterator, ua
+@@ -1857,16 +1863,14 @@ fn userAgentValidator(allocator: Allocator, args: *std.process.Args.Iterator, ua
      ua.* = try allocator.dupe(u8, str);
  }
  
@@ -89,25 +125,106 @@ index 7368bdc92..f183306e4 100644
  }
  
  fn localeValidator(allocator: Allocator, args: *std.process.Args.Iterator, field: *[:0]const u8) !void {
-diff --git a/src/browser/main_markdown.zig b/src/browser/main_markdown.zig
+diff --git a/src/browser/Session.zig b/src/browser/Session.zig
+index e6e927035..eaf2e87fc 100644
+--- a/src/browser/Session.zig
++++ b/src/browser/Session.zig
+@@ -49,6 +49,12 @@ const ArenaPool = App.ArenaPool;
+ 
+ const Session = @This();
+ 
++/// snitchmd: injected by `fetch` before user scripts.
++pub const builtin_inject_scripts = [_][]const u8{
++    @embedFile("snitchmd/safari.js"),
++    @embedFile("snitchmd/style-index.js"),
++};
++
+ browser: *Browser,
+ arena: *lp.Arena,
+ // Session history, one per top-level browsing context, keyed by its root
+diff --git a/src/browser/markdown.zig b/src/browser/markdown.zig
+index b52540c6a..1b78437bd 100644
+--- a/src/browser/markdown.zig
++++ b/src/browser/markdown.zig
+@@ -646,7 +646,7 @@ const Context = struct {
+ /// A text/markdown response is loaded as a text document, its body a single
+ /// `<pre>`. Converting that would fence the whole file, so the document's
+ /// text, which is the markdown the server sent, is written as-is.
+-fn markdownSource(node: *Node) ?*Node {
++pub fn markdownSource(node: *Node) ?*Node {
+     const doc = node.is(Document) orelse return null;
+     if (!std.mem.eql(u8, doc.getContentType(), "text/markdown")) return null;
+     const root = doc.getDocumentElement() orelse return null;
+diff --git a/src/browser/snitchmd/safari.js b/src/browser/snitchmd/safari.js
 new file mode 100644
-index 000000000..9ccf40852
+index 000000000..58bd84efe
 --- /dev/null
-+++ b/src/browser/main_markdown.zig
-@@ -0,0 +1,44 @@
-+// snitchmd: `--dump main_markdown` serializes the rendered DOM to HTML, then
++++ b/src/browser/snitchmd/safari.js
+@@ -0,0 +1,9 @@
++// Sets JS navigator properties to match Safari: deletes userAgentData, sets vendor to Apple.
++(function () {
++  delete Navigator.prototype.userAgentData;
++
++  Object.defineProperty(Navigator.prototype, "vendor", {
++    get: function () { return "Apple Computer, Inc."; },
++    configurable: true,
++  });
++})();
+diff --git a/src/browser/snitchmd/style-index.js b/src/browser/snitchmd/style-index.js
+new file mode 100644
+index 000000000..31a1539be
+--- /dev/null
++++ b/src/browser/snitchmd/style-index.js
+@@ -0,0 +1,18 @@
++// Lightpanda lacks indexed access to inline styles (style[0] is undefined while
++// style.item(0) works). React sites such as Substack read style[i] and crash.
++// Defines getters for the first MAX_INDEXED_PROPS indexes.
++(function () {
++  var MAX_INDEXED_PROPS = 200;
++  var proto = CSSStyleDeclaration.prototype;
++
++  for (var i = 0; i < MAX_INDEXED_PROPS; i++) {
++    defineIndex(i);
++  }
++
++  function defineIndex(i) {
++    Object.defineProperty(proto, i, {
++      get: function () { return i < this.length ? this.item(i) : undefined; },
++      configurable: true,
++    });
++  }
++})();
+diff --git a/src/browser/trafilatura.zig b/src/browser/trafilatura.zig
+new file mode 100644
+index 000000000..9a2b7251f
+--- /dev/null
++++ b/src/browser/trafilatura.zig
+@@ -0,0 +1,61 @@
++// snitchmd: `--dump markdown` serializes the rendered DOM to HTML, then
 +// extracts the main content as Markdown with rs-trafilatura (src/rust/trafilatura).
++// Lightpanda's own whole-page converter stays as `--dump markdown_full`.
 +
 +const std = @import("std");
 +const dump = @import("dump.zig");
++const markdown = @import("markdown.zig");
++const LimitedWriter = @import("../LimitedWriter.zig");
 +const RenderTree = @import("RenderTree.zig");
 +const Frame = @import("Frame.zig");
 +
 +/// Writes the page's main content as Markdown extracted by rs-trafilatura.
 +pub fn render(allocator: std.mem.Allocator, state: RenderTree.State, opts: dump.Opts, writer: *std.Io.Writer, frame: *Frame) !void {
++    // The server sent Markdown itself: nothing to extract.
++    if (markdown.markdownSource(state.root) != null) {
++        return markdown.dump(state, .{ .max_bytes = opts.max_bytes }, writer, frame);
++    }
++
++    // max_bytes caps the Markdown below, not the HTML fed to the extractor.
++    var html_opts = opts;
++    html_opts.max_bytes = null;
++
 +    var html: std.Io.Writer.Allocating = .init(allocator);
 +    defer html.deinit();
-+    try dump.render(state, opts, &html.writer, frame);
++    try dump.render(state, html_opts, &html.writer, frame);
 +    const bytes = html.written();
 +
 +    const out = trafilatura_markdown(.{
@@ -121,7 +238,12 @@ index 000000000..9ccf40852
 +    // null: no main content, or rs-trafilatura failed (failures are logged to stderr).
 +    const ptr = out.ptr orelse return error.ExtractionEmpty;
 +
-+    try writer.writeAll(ptr[0..out.len]);
++    var limited = LimitedWriter.init(writer, opts.max_bytes);
++    limited.writer.writeAll(ptr[0..out.len]) catch |err| {
++        // Hit max_bytes: end with the marker the other dumps use.
++        if (!limited.truncated) return err;
++        return writer.writeAll(LimitedWriter.truncation_marker);
++    };
 +    try writer.writeByte('\n');
 +}
 +
@@ -153,18 +275,55 @@ index 5c0bc2bc8..fc879e1f3 100644
      }
      if (protocols.len > 0) {
 diff --git a/src/help.zon b/src/help.zon
-index 1ba73157a..93ea1aa7a 100644
+index 1ba73157a..c43cadda9 100644
 --- a/src/help.zon
 +++ b/src/help.zon
-@@ -111,6 +111,8 @@
+@@ -101,16 +101,20 @@
+     \\          Defaults to no cookie saving.
+     \\  --dump <DUMP>
+     \\          Dumps the document to stdout.
+-    \\          Defaults to no dump.
++    \\          Defaults to markdown.
+     \\          Allowed values:
+     \\              html               Serialized HTML of the DOM.
+-    \\              markdown           Converts content to Markdown. Asks
+-    \\                                 the server for markdown first; when
++    \\              markdown           Converts content to Markdown. Keeps
++    \\                                 the main content only, extracted by
++    \\                                 rs-trafilatura from the rendered DOM.
++    \\                                 Asks the server for markdown first; when
+     \\                                 it sends some, that is dumped as-is
+     \\                                 (logged as "markdown served"). Not
      \\                                 with --dump-selector, --wait-selector,
      \\                                 --wait-script or --inject-script,
      \\                                 which need the DOM.
-+    \\              main_markdown      Main content as Markdown, extracted
-+    \\                                 from the rendered DOM by rs-trafilatura.
++    \\              markdown_full      Whole page as Markdown, Lightpanda's
++    \\                                 own converter.
      \\              pdf                Text-only rendering of the page as a
      \\                                 PDF file (base64 with --json).
      \\              png                Text-only rendering of the page as a
+@@ -183,7 +187,7 @@
+     \\          Defaults to no terminate.
+     \\  --wait-ms <INT>
+     \\          Wait time in milliseconds. Supersedes all other --wait parameters.
+-    \\          Defaults to 5000.
++    \\          Defaults to 30000.
+     \\  --wait-script <EXPR>
+     \\          Wait for a JavaScript expression to return truthy. Checked after
+     \\          --wait-until condition is met.
+@@ -209,10 +213,8 @@
+     \\                                started, ignoring intervals, long timeouts,
+     \\                                idle callbacks and WebSocket traffic.
+     \\                                Resolves at load when load started nothing.
+-    \\          Defaults to 'load'.
+-    \\          If --wait-selector, --wait-script or --wait-script-file is specified,
+-    \\          this step is skipped unless explicitly specified. If both are
+-    \\          specified, this step is run first.
++    \\          Defaults to 'done'. Runs before --wait-selector, --wait-script and
++    \\          --wait-script-file.
+     \\  --with-base
+     \\          Add a <base> tag in dump.
+     \\          Defaults to false.
 @@ -649,9 +651,9 @@
      \\          Time zone used by Date and Intl, e.g. Europe/Paris or UTC.
      \\          Defaults to the host time zone.
@@ -174,30 +333,66 @@ index 1ba73157a..93ea1aa7a 100644
 -    \\          still sends Sec-Ch-Ua. Incompatible with --user-agent-suffix.
 +    \\          Override the User-Agent header entirely. The browser omits
 +    \\          Sec-Ch-Ua headers when the value contains "Mozilla".
-+    \\          Incompatible with --user-agent-suffix.
++    \\          Incompatible with --user-agent-suffix. fetch defaults to Safari 27.0.
      \\  --user-agent-suffix <STRING>
      \\          Suffix appended to the Lightpanda/X.Y User-Agent.
      \\  --v8-flags-unsafe <FLAGS>
 diff --git a/src/lightpanda.zig b/src/lightpanda.zig
-index 5dfe5aa70..4de6ae1bc 100644
+index 5dfe5aa70..d5c146a67 100644
 --- a/src/lightpanda.zig
 +++ b/src/lightpanda.zig
 @@ -66,6 +66,7 @@ pub const actions = @import("browser/actions.zig");
  pub const Browser = @import("browser/Browser.zig");
  pub const Session = @import("browser/Session.zig");
  pub const markdown = @import("browser/markdown.zig");
-+pub const main_markdown = @import("browser/main_markdown.zig");
++pub const trafilatura = @import("browser/trafilatura.zig");
  pub const screenshot = @import("browser/screenshot.zig");
  pub const RenderTree = @import("browser/RenderTree.zig");
  pub const interactive = @import("browser/interactive.zig");
-@@ -550,6 +551,7 @@ fn dumpContent(app: *App, mode: Config.DumpFormat, opts: FetchOpts, frame: *Fram
+@@ -243,7 +244,7 @@ pub fn fetch(app: *App, browser: *Browser, urls: []const [:0]const u8, opts: Fet
+     }
+ 
+     // Stash scripts user want to inject.
+-    session.inject_scripts = opts.inject_script.items;
++    session.inject_scripts = try std.mem.concat(session.arena.allocator(), []const u8, &.{ &Session.builtin_inject_scripts, opts.inject_script.items });
+ 
+     // One page per url. `PageHandle.frame()` always re-resolves the live frame,
+     // so the handles stay valid across navigate / wait. The Runner's wait paths
+@@ -549,7 +550,8 @@ fn dumpContent(app: *App, mode: Config.DumpFormat, opts: FetchOpts, frame: *Fram
+     const state = try RenderTree.resolve(arena.allocator(), try dumpRoot(frame, opts.selector), opts.dump.strip, frame);
      switch (mode) {
          .html => try dump.render(state, opts.dump, writer, frame),
-         .markdown => try markdown.dump(state, .{ .max_bytes = opts.dump.max_bytes }, writer, frame),
-+        .main_markdown => try main_markdown.render(arena.allocator(), state, opts.dump, writer, frame),
+-        .markdown => try markdown.dump(state, .{ .max_bytes = opts.dump.max_bytes }, writer, frame),
++        .markdown => try trafilatura.render(arena.allocator(), state, opts.dump, writer, frame),
++        .markdown_full => try markdown.dump(state, .{ .max_bytes = opts.dump.max_bytes }, writer, frame),
          .png => {
              _ = try screenshot.png(arena.allocator(), state, pngOpts(frame), writer, frame);
          },
+@@ -854,7 +856,8 @@ test "fetch: a markdown dump asks the server for markdown" {
+ 
+     aw.clearRetainingCapacity();
+     try dumpContent(testing.test_app, .markdown, .{ .dump = .{} }, not_asked.frame().?, false, &aw.writer);
+-    try testing.expectString("\n# Negotiated\n\nSent as HTML.\n", aw.written());
++    // snitchmd: markdown is rs-trafilatura's main content; it drops the page title.
++    try testing.expectString("Sent as HTML.\n", aw.written());
+ 
+     // Injected scripts run against the DOM too.
+     var scripts: std.ArrayList([]const u8) = .empty;
+diff --git a/src/main.zig b/src/main.zig
+index 68a3ba101..e914fb8af 100644
+--- a/src/main.zig
++++ b/src/main.zig
+@@ -193,8 +193,8 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+                 log.fatal(.app, "--dump-max-bytes needs --dump", .{});
+                 return error.InvalidArgument;
+             }
+-            if (opts.dump_max_bytes != null and opts.dump != .html and opts.dump != .markdown) {
+-                log.fatal(.app, "--dump-max-bytes needs text", .{ .dump = opts.dump, .allowed = "html, markdown" });
++            if (opts.dump_max_bytes != null and opts.dump != .html and opts.dump != .markdown and opts.dump != .markdown_full) {
++                log.fatal(.app, "--dump-max-bytes needs text", .{ .dump = opts.dump, .allowed = "html, markdown, markdown_full" });
+                 return error.InvalidArgument;
+             }
+             if (opts.markdown_alternate and opts.dump != .markdown) {
 diff --git a/src/network/HttpClient.zig b/src/network/HttpClient.zig
 index 1a1163a86..b69c08c1b 100644
 --- a/src/network/HttpClient.zig
@@ -224,6 +419,20 @@ index 1a1163a86..b69c08c1b 100644
 +            if (self.client.skipBaselineHeader(hdr.name)) continue;
              try self.addHeader(hdr.name, hdr.value, .{ .source = hdr.source });
          }
+ 
+diff --git a/src/network/http.zig b/src/network/http.zig
+index 2533b34a5..aa57bf7b3 100644
+--- a/src/network/http.zig
++++ b/src/network/http.zig
+@@ -471,6 +471,9 @@ pub const Connection = struct {
+         ip_filter: ?*const IpFilter,
+     ) !void {
+         libcurl.curl_easy_reset(self._easy);
++        // snitchmd: Safari 27.0 TLS and HTTP/2 fingerprint. Lightpanda sends its
++        // own headers, so curl-impersonate's built-in header list stays off.
++        try libcurl.curl_easy_impersonate(self._easy, "safari270", false);
+         self.transport = .none;
+         self.clearHeaders();
  
 diff --git a/src/rust/Cargo.lock b/src/rust/Cargo.lock
 index 873b27796..994535cf8 100644
@@ -1310,3 +1519,38 @@ index 000000000..e104593ee
 +fn read_bytes<'a>(ptr: *const c_uchar, len: usize) -> Option<&'a [u8]> {
 +    (len > 0).then(|| unsafe { std::slice::from_raw_parts(ptr, len) })
 +}
+diff --git a/src/sys/libcurl.zig b/src/sys/libcurl.zig
+index 08c399d59..e732ca68a 100644
+--- a/src/sys/libcurl.zig
++++ b/src/sys/libcurl.zig
+@@ -616,6 +616,11 @@ pub fn curl_easy_reset(easy: *Curl) void {
+     c.curl_easy_reset(easy);
+ }
+ 
++// curl-impersonate: sets the TLS and HTTP/2 settings of a browser target.
++pub fn curl_easy_impersonate(easy: *Curl, target: [:0]const u8, default_headers: bool) Error!void {
++    try errorCheck(c.curl_easy_impersonate(easy, target.ptr, @intFromBool(default_headers)));
++}
++
+ pub fn curl_easy_perform(easy: *Curl) Error!void {
+     try errorCheck(c.curl_easy_perform(easy));
+ }
+diff --git a/src/telemetry/telemetry.zig b/src/telemetry/telemetry.zig
+index 3a7a9583e..5e873f35f 100644
+--- a/src/telemetry/telemetry.zig
++++ b/src/telemetry/telemetry.zig
+@@ -8,12 +8,9 @@ const log = lp.log;
+ const IID_FILE = "iid";
+ const Allocator = std.mem.Allocator;
+ 
++// snitchmd: telemetry is always off.
+ pub fn isDisabled() bool {
+-    if (lp.IS_DEBUG or lp.IS_TEST) {
+-        return true;
+-    }
+-
+-    return std.c.getenv("LIGHTPANDA_DISABLE_TELEMETRY") != null;
++    return true;
+ }
+ 
+ pub const Telemetry = TelemetryT(@import("lightpanda.zig"));

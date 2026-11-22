@@ -1,6 +1,6 @@
 #!/bin/sh
 # Fetches pinned Lightpanda, BoringSSL, boringssl-zig, curl, and curl-impersonate,
-# applies patches, and builds dist/lightpanda.
+# applies patches, and builds dist/snitchmd.
 # `build.sh prepare` stops after patching.
 set -eu
 
@@ -68,5 +68,5 @@ fi
 (cd "$BUILD/lightpanda" && make download-v8 && make build)
 
 mkdir -p "$ROOT/dist"
-cp "$BUILD/lightpanda/zig-out/bin/lightpanda" "$ROOT/dist/lightpanda"
-echo "built: $ROOT/dist/lightpanda"
+cp "$BUILD/lightpanda/zig-out/bin/lightpanda" "$ROOT/dist/snitchmd"
+echo "built: $ROOT/dist/snitchmd"

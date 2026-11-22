@@ -6,9 +6,9 @@ The engine is [Lightpanda](https://github.com/lightpanda-io/browser) patched to:
 
 - connect with Safari's network fingerprint (TLS and HTTP/2) using
   [curl-impersonate](https://github.com/lexiforest/curl-impersonate)'s curl and BoringSSL patches;
-- accept a browser User-Agent and drop Lightpanda's own client hints;
-- extract the main content with [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura)
-  (`--dump main_markdown`).
+- send Safari's User-Agent and JS identity (`navigator.vendor`, no `userAgentData`);
+- extract the main content with [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura);
+- print Markdown by default: `snitchmd URL` needs no flags.
 
 The previous Docker + CloakBrowser version lives on the `v1` branch.
 
@@ -17,7 +17,7 @@ The previous Docker + CloakBrowser version lives on the `v1` branch.
 Needs Zig 0.17, Rust (cargo), git, curl, make.
 
 ```sh
-./build.sh            # fetch pinned sources, patch, build → dist/lightpanda (~8 min)
+./build.sh            # fetch pinned sources, patch, build → dist/snitchmd (~8 min)
 ./build.sh prepare    # fetch and patch into build/ without building
 ```
 
@@ -33,9 +33,10 @@ Pinned versions are in `versions.env`. Patches:
 ## Run
 
 ```sh
-./snitchmd https://paulgraham.com/greatwork.html
+dist/snitchmd https://paulgraham.com/greatwork.html
 ```
 
-Extra arguments pass to `lightpanda fetch`. `inject/` holds scripts injected into every page:
-`safari.js` (Safari JS identity) and `style-index.js` (indexed access to inline
-styles missing in Lightpanda; prevents crashes on React sites, e.g. Substack).
+Accepts every `lightpanda fetch` option (`dist/snitchmd help fetch`). Two scripts run in
+every page (source in `patches/lightpanda.patch`, `src/browser/snitchmd/`): `safari.js` (Safari JS identity)
+and `style-index.js` (indexed access to inline styles missing in Lightpanda; prevents
+crashes on React sites, e.g. Substack).
