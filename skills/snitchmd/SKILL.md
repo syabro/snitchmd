@@ -47,6 +47,8 @@ Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
   --favor-recall            Keep more content, even if some boilerplate remains
   --dump-selector CSS       Extract only from the first matching element
   --wait-selector CSS       Wait for an element before extracting
+  --script JS               Run JS in the page before extracting (e.g. click "Show more")
+  --script-file PATH        Same, script read from a file
   --wait-ms N               Wait cap in ms (default 30000)
   --dump-max-bytes N        Cut the Markdown at N bytes, ending with [truncated]
   --http-proxy URL          Proxy
@@ -60,6 +62,7 @@ Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
 | Symptom | Try |
 |---|---|
 | Exit 2 or a near-empty result | `--wait-selector` for the content element, or a larger `--wait-ms` |
+| Content behind a "Show more" button | `--script "document.querySelector('button.more').click()"` |
 | Wrong block extracted | `--dump-selector` with the article's CSS selector |
 | Too much boilerplate | `--favor-precision` |
 | Content missing | `--favor-recall` |

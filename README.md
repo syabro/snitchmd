@@ -74,6 +74,7 @@ Every `lightpanda fetch` option works (`snitchmd help fetch`). Most used:
 | `--favor-precision` / `--favor-recall` | cut more boilerplate / keep more content |
 | `--dump-selector CSS` | extract only from the first matching element |
 | `--wait-selector CSS` | wait for an element before extracting |
+| `--script JS` / `--script-file PATH` | run JS in the page before extracting, e.g. click "Show more" |
 | `--wait-ms N` | wait cap in ms (default 30000) |
 | `--dump-max-bytes N` | cut the Markdown at N bytes, ending with `[truncated]` |
 | `--http-proxy URL` | proxy |

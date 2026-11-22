@@ -19,6 +19,11 @@ One binary instead of a Docker image: patched Lightpanda in place of CloakBrowse
   `--http-proxy` (was `--proxy`), `--wait-ms` (was `--timeout` and `--wait`); `--wait-until`
   takes Lightpanda's values.
 
+### Added
+
+- `--script JS` / `--script-file PATH`: JavaScript run once in the page before extraction,
+  e.g. clicking "Show more"; the page then settles again.
+
 ### Kept
 
 - Result cache and `--no-cache`, stderr summary, `--json` fields, `--html-output`,
