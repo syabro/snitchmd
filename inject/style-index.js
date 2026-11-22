@@ -1,0 +1,1 @@
+(function(){var P=(window.CSSStyleDeclaration||{}).prototype;if(!P)return;for(var i=0;i<200;i++)(function(i){if(!Object.getOwnPropertyDescriptor(P,i))Object.defineProperty(P,i,{get:function(){return i<this.length?this.item(i):undefined;},configurable:true});})(i);})();

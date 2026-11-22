@@ -1,0 +1,15 @@
+#!/bin/sh
+# snitchmd URL [lightpanda fetch options...]
+# Patched Lightpanda with Safari network fingerprint, Safari identity and
+# rs-trafilatura main-content Markdown.
+set -eu
+DIR="$(cd "$(dirname "$0")" && pwd)"
+[ $# -ge 1 ] || { echo "usage: snitchmd URL [lightpanda fetch options...]" >&2; exit 2; }
+url="$1"; shift
+export CURL_IMPERSONATE=safari270 CURL_IMPERSONATE_HEADERS=no LIGHTPANDA_DISABLE_TELEMETRY=true
+exec "$DIR/dist/lightpanda" fetch "$url" \
+  --dump trafilatura --wait-until done --wait-ms 30000 \
+  --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15' \
+  --inject-script-file "$DIR/inject/safari.js" \
+  --inject-script-file "$DIR/inject/style-index.js" \
+  "$@"
