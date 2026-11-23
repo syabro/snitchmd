@@ -36,8 +36,8 @@ Needs Zig 0.17, Rust (cargo), git, curl, make.
 ./build.sh prepare    # fetch and patch into build/ without building
 ```
 
-`just release VERSION` builds macOS arm64 here and Linux x86_64 on pc.local, tags, and publishes
-both binaries as a GitHub release with notes from CHANGELOG.md.
+Releases are built by GitHub Actions: `just release VERSION` tags and pushes, the workflow builds
+macOS arm64, Linux x86_64 and Linux arm64 and publishes them with notes from CHANGELOG.md.
 
 Pinned versions are in `versions.env`. Patches:
 

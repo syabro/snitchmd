@@ -1,0 +1,95 @@
+# Builds snitchmd for every platform. A pushed v* tag also publishes the
+# binaries as a GitHub release with notes from CHANGELOG.md.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Pinned CPU: the runner's chip is newer than M1, and a native build
+          # crashes with SIGILL on M1 Macs (Lightpanda's release workflow).
+          - asset: snitchmd-darwin-arm64
+            runner: macos-15
+            zigflags: -Dcpu=apple_m1
+          # The oldest available Ubuntu, so the binary runs on older glibc.
+          - asset: snitchmd-linux-x86_64
+            runner: ubuntu-22.04
+            zigflags: -Dcpu=x86_64
+          - asset: snitchmd-linux-arm64
+            runner: ubuntu-24.04-arm
+            zigflags: -Dcpu=generic
+
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Install apt deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang make git curl xz-utils
+
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: 0.17.0
+
+      - name: Build
+        env:
+          ZIGFLAGS: ${{ matrix.zigflags }}
+        run: ./build.sh
+
+      - name: Strip
+        run: strip -o dist/${{ matrix.asset }} dist/snitchmd
+
+      - name: Smoke test
+        run: |
+          dist/${{ matrix.asset }} version
+          dist/${{ matrix.asset }} --no-cache https://example.com
+
+      - name: Required glibc
+        if: runner.os == 'Linux'
+        run: objdump -T dist/${{ matrix.asset }} | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+          retention-days: 7
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          scripts/changelog-notes "${TAG#v}" \
+            | gh release create "$TAG" --title "$TAG" --notes-file - dist/snitchmd-*

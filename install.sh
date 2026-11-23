@@ -25,6 +25,7 @@ fi
 case "$(uname -s)-$(uname -m)" in
   Darwin-arm64) asset="snitchmd-darwin-arm64" ;;
   Linux-x86_64) asset="snitchmd-linux-x86_64" ;;
+  Linux-aarch64) asset="snitchmd-linux-arm64" ;;
   *)
     echo "snitchmd: no prebuilt binary for $(uname -s) $(uname -m); build from source (see README)." >&2
     exit 1
