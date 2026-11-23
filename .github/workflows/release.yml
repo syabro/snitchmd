@@ -58,7 +58,7 @@ jobs:
       - name: Smoke test
         run: |
           dist/${{ matrix.asset }} version
-          dist/${{ matrix.asset }} --no-cache https://example.com
+          dist/${{ matrix.asset }} https://example.com --no-cache
 
       - name: Required glibc
         if: runner.os == 'Linux'
