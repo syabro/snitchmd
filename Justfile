@@ -30,7 +30,7 @@ test F="":
 
 # Tag VERSION and push it; GitHub Actions builds the binaries and publishes the release.
 release version:
-    @test -z "$(git status --porcelain)" || (echo "Working tree must be clean before release" >&2; exit 1)
+    @test -z "$(git status --porcelain --untracked-files=no)" || (echo "Working tree must be clean before release" >&2; exit 1)
     git tag v{{version}}
     git push
     git push origin v{{version}}
