@@ -74,4 +74,4 @@ Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
 curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
 ```
 
-Prebuilt for macOS arm64 and Linux x86_64 (glibc 2.38+).
+Prebuilt for macOS arm64, Linux x86_64 (glibc 2.35+) and Linux arm64 (glibc 2.38+).

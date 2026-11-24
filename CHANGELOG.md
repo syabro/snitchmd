@@ -13,7 +13,7 @@ One binary instead of a Docker image: patched Lightpanda in place of CloakBrowse
 
 - Engine: [Lightpanda](https://github.com/lightpanda-io/browser) with Safari 27's TLS and HTTP/2
   fingerprint (curl-impersonate), Safari User-Agent and JS identity; rs-trafilatura built in.
-- Install: a prebuilt binary (macOS arm64, Linux x86_64 with glibc 2.38+); no Docker.
+- Install: a prebuilt binary (macOS arm64, Linux x86_64 with glibc 2.35+, Linux arm64 with glibc 2.38+); no Docker.
 - Options are Lightpanda's `fetch` options: `--wait-selector` (was `--wait-for-selector`),
   `--dump-selector` (was `--content-selector`), `--dump-max-bytes` in bytes (was `--max-chars`),
   `--http-proxy` (was `--proxy`), `--wait-ms` (was `--timeout` and `--wait`); `--wait-until`

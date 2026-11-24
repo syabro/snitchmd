@@ -18,7 +18,7 @@ The previous Docker + CloakBrowser version lives on the `v1` branch.
 curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
 ```
 
-Prebuilt for macOS arm64 and Linux x86_64 (glibc 2.38+). Uninstall:
+Prebuilt for macOS arm64, Linux x86_64 (glibc 2.35+) and Linux arm64 (glibc 2.38+). Uninstall:
 `curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash -s -- --uninstall`.
 
 For an agent:
