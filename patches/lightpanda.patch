@@ -1,5 +1,5 @@
 diff --git a/build.zig b/build.zig
-index ed5135c26..40e14c373 100644
+index ed5135c26c4cc80728bbc6bcd5fd4dd4ec60f57b..40e14c3734048a57c861f1e4cd66261928b7420a 100644
 --- a/build.zig
 +++ b/build.zig
 @@ -1052,6 +1052,7 @@ fn buildCurl(
@@ -11,7 +11,7 @@ index ed5135c26..40e14c373 100644
      });
  
 diff --git a/build.zig.zon b/build.zig.zon
-index ec08091d2..81b8b2168 100644
+index ec08091d2d4c4c990b792c5eb8c9e3fc9e7529fb..81b8b2168784abcdbea5e834a4f3a8d36d5a4e41 100644
 --- a/build.zig.zon
 +++ b/build.zig.zon
 @@ -26,15 +26,9 @@
@@ -34,7 +34,7 @@ index ec08091d2..81b8b2168 100644
              .url = "https://sqlite.org/2026/sqlite-amalgamation-3530200.zip",
              .hash = "N-V-__8AALc_rgC04POe18O0LKFRm4ouQpLtL3riscEmWp-Q",
 diff --git a/src/Config.zig b/src/Config.zig
-index 7368bdc92..ff669126d 100644
+index 7368bdc92bff69b76e61bd616a68504eac8c16cc..ff669126dbe163fab62638210d0968c4a968906c 100644
 --- a/src/Config.zig
 +++ b/src/Config.zig
 @@ -417,6 +417,18 @@ fn waitScriptFileValidator(allocator: Allocator, args: *std.process.Args.Iterato
@@ -161,7 +161,7 @@ index 7368bdc92..ff669126d 100644
      };
  
 diff --git a/src/browser/Session.zig b/src/browser/Session.zig
-index e6e927035..eaf2e87fc 100644
+index e6e927035815d3a9e02f2f56fcc6dec0985ddbe9..eaf2e87fc6c5339dc17c7851c2425c6fe744ed91 100644
 --- a/src/browser/Session.zig
 +++ b/src/browser/Session.zig
 @@ -49,6 +49,12 @@ const ArenaPool = App.ArenaPool;
@@ -178,7 +178,7 @@ index e6e927035..eaf2e87fc 100644
  arena: *lp.Arena,
  // Session history, one per top-level browsing context, keyed by its root
 diff --git a/src/browser/markdown.zig b/src/browser/markdown.zig
-index b52540c6a..1b78437bd 100644
+index b52540c6a755fc0f01a2b976c95a10412eadfe32..1b78437bd79d6fa08d1203461001b0171becdf6f 100644
 --- a/src/browser/markdown.zig
 +++ b/src/browser/markdown.zig
 @@ -646,7 +646,7 @@ const Context = struct {
@@ -192,7 +192,7 @@ index b52540c6a..1b78437bd 100644
      const root = doc.getDocumentElement() orelse return null;
 diff --git a/src/browser/snitchmd/safari.js b/src/browser/snitchmd/safari.js
 new file mode 100644
-index 000000000..58bd84efe
+index 0000000000000000000000000000000000000000..58bd84efe243005f641fff5b06422716aea3fcaf
 --- /dev/null
 +++ b/src/browser/snitchmd/safari.js
 @@ -0,0 +1,9 @@
@@ -207,7 +207,7 @@ index 000000000..58bd84efe
 +})();
 diff --git a/src/browser/snitchmd/style-index.js b/src/browser/snitchmd/style-index.js
 new file mode 100644
-index 000000000..31a1539be
+index 0000000000000000000000000000000000000000..31a1539be9187ea313300165a4b43f205731c217
 --- /dev/null
 +++ b/src/browser/snitchmd/style-index.js
 @@ -0,0 +1,18 @@
@@ -231,7 +231,7 @@ index 000000000..31a1539be
 +})();
 diff --git a/src/browser/trafilatura.zig b/src/browser/trafilatura.zig
 new file mode 100644
-index 000000000..e1fc1b3c9
+index 0000000000000000000000000000000000000000..e1fc1b3c929ba8060466f348521be533124d4a80
 --- /dev/null
 +++ b/src/browser/trafilatura.zig
 @@ -0,0 +1,125 @@
@@ -361,7 +361,7 @@ index 000000000..e1fc1b3c9
 +extern "c" fn trafilatura_markdown(input: Input) Output;
 +extern "c" fn trafilatura_free(out: Output) void;
 diff --git a/src/browser/webapi/net/WebSocket.zig b/src/browser/webapi/net/WebSocket.zig
-index 5c0bc2bc8..fc879e1f3 100644
+index 5c0bc2bc801ec053e38bce07b8c63fd5c0a5f03d..fc879e1f3c051b2efc19e024b6d31339fb1e2ffa 100644
 --- a/src/browser/webapi/net/WebSocket.zig
 +++ b/src/browser/webapi/net/WebSocket.zig
 @@ -276,6 +276,8 @@ fn connect(self: *WebSocket, protocols: []const []const u8) !void {
@@ -374,7 +374,7 @@ index 5c0bc2bc8..fc879e1f3 100644
      }
      if (protocols.len > 0) {
 diff --git a/src/help.zon b/src/help.zon
-index 1ba73157a..68616a4ee 100644
+index 1ba73157aac2fc060431a9587daa4c77b528e9f4..68616a4ee69da3b799ccb0e468241492717060d2 100644
 --- a/src/help.zon
 +++ b/src/help.zon
 @@ -101,16 +101,22 @@
@@ -499,7 +499,7 @@ index 1ba73157a..68616a4ee 100644
      \\          Suffix appended to the Lightpanda/X.Y User-Agent.
      \\  --v8-flags-unsafe <FLAGS>
 diff --git a/src/lightpanda.zig b/src/lightpanda.zig
-index 5dfe5aa70..9bf21d46a 100644
+index 5dfe5aa7084c74884fda8263fb6d724e188fad82..9bf21d46af8b88197fc6fd831074a7c79e0e5267 100644
 --- a/src/lightpanda.zig
 +++ b/src/lightpanda.zig
 @@ -66,6 +66,7 @@ pub const actions = @import("browser/actions.zig");
@@ -612,7 +612,7 @@ index 5dfe5aa70..9bf21d46a 100644
      // Injected scripts run against the DOM too.
      var scripts: std.ArrayList([]const u8) = .empty;
 diff --git a/src/main.zig b/src/main.zig
-index 68a3ba101..9f9417dcd 100644
+index 68a3ba101ec9cc7d82523636dce6dd05ef9cd8da..9f9417dcdab5bc7375b9dec3ddd800d9668e9b9b 100644
 --- a/src/main.zig
 +++ b/src/main.zig
 @@ -24,6 +24,7 @@ const log = lp.log;
@@ -691,7 +691,7 @@ index 68a3ba101..9f9417dcd 100644
          .mcp => |opts| {
              log.info(.mcp, "starting server", .{});
 diff --git a/src/network/HttpClient.zig b/src/network/HttpClient.zig
-index 1a1163a86..b69c08c1b 100644
+index 1a1163a865d5d7569db9e2e5de1600820fb558ca..b69c08c1b9e9d14f8d3c41ac074c16e825dc4f51 100644
 --- a/src/network/HttpClient.zig
 +++ b/src/network/HttpClient.zig
 @@ -493,6 +493,13 @@ pub fn getLanguages(self: *const Client) []const []const u8 {
@@ -718,7 +718,7 @@ index 1a1163a86..b69c08c1b 100644
          }
  
 diff --git a/src/network/http.zig b/src/network/http.zig
-index 2533b34a5..aa57bf7b3 100644
+index 2533b34a5d5634592adb4682bfd6979cfa2f1f2a..aa57bf7b3027d7e3493b6cc12e91c610fdd08543 100644
 --- a/src/network/http.zig
 +++ b/src/network/http.zig
 @@ -471,6 +471,9 @@ pub const Connection = struct {
@@ -732,7 +732,7 @@ index 2533b34a5..aa57bf7b3 100644
          self.clearHeaders();
  
 diff --git a/src/rust/Cargo.lock b/src/rust/Cargo.lock
-index 873b27796..994535cf8 100644
+index 873b27796bce185d66842c75944296c0903037b8..994535cf8d053abfe9c1504f9296721df5ad635c 100644
 --- a/src/rust/Cargo.lock
 +++ b/src/rust/Cargo.lock
 @@ -8,6 +8,24 @@ version = "2.0.1"
@@ -1681,7 +1681,7 @@ index 873b27796..994535cf8 100644
 +source = "registry+https://github.com/rust-lang/crates.io-index"
 +checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
 diff --git a/src/rust/Cargo.toml b/src/rust/Cargo.toml
-index 7ff3a9bc6..528693946 100644
+index 7ff3a9bc6819473bec4b49690c4ab61f7ed710ae..528693946f94de05e7e49ac14ec45b9e4d0b7872 100644
 --- a/src/rust/Cargo.toml
 +++ b/src/rust/Cargo.toml
 @@ -4,7 +4,7 @@
@@ -1694,7 +1694,7 @@ index 7ff3a9bc6..528693946 100644
  # Debug builds keep our own crates unoptimized but optimize dependencies
  # (parley/tiny-skia/png are 10x slower when not optimized).
 diff --git a/src/rust/ffi/Cargo.toml b/src/rust/ffi/Cargo.toml
-index 3030ac768..bd051e146 100644
+index 3030ac7684593577db08354a856e01991dcb20f8..bd051e14653e33266fcbfdcc7b7ef3c11e2ba276 100644
 --- a/src/rust/ffi/Cargo.toml
 +++ b/src/rust/ffi/Cargo.toml
 @@ -11,3 +11,4 @@ crate-type = ["staticlib"]
@@ -1703,7 +1703,7 @@ index 3030ac768..bd051e146 100644
  lightpanda-render = { path = "../render" }
 +lightpanda-trafilatura = { version = "0.1.0", path = "../trafilatura" }
 diff --git a/src/rust/ffi/lib.rs b/src/rust/ffi/lib.rs
-index 42d88da87..3d277d926 100644
+index 42d88da87b50daadb5ce03620a0b12595991bc67..3d277d9265f664d28e55a90c5b0ae0faa3dcd98d 100644
 --- a/src/rust/ffi/lib.rs
 +++ b/src/rust/ffi/lib.rs
 @@ -22,3 +22,4 @@
@@ -1713,7 +1713,7 @@ index 42d88da87..3d277d926 100644
 +extern crate lightpanda_trafilatura;
 diff --git a/src/rust/trafilatura/Cargo.toml b/src/rust/trafilatura/Cargo.toml
 new file mode 100644
-index 000000000..c4c2d8242
+index 0000000000000000000000000000000000000000..c4c2d8242366bf0d8b540ddd675ec548c983c588
 --- /dev/null
 +++ b/src/rust/trafilatura/Cargo.toml
 @@ -0,0 +1,7 @@
@@ -1726,7 +1726,7 @@ index 000000000..c4c2d8242
 +rs-trafilatura = { git = "https://github.com/Murrough-Foley/rs-trafilatura", rev = "2a4f56eef84cca2d319d27c9108373d593110355", version = "0.2.2" }
 diff --git a/src/rust/trafilatura/src/lib.rs b/src/rust/trafilatura/src/lib.rs
 new file mode 100644
-index 000000000..2040b4b14
+index 0000000000000000000000000000000000000000..2040b4b14d712ae56aa39e1349f67c582bfa11a6
 --- /dev/null
 +++ b/src/rust/trafilatura/src/lib.rs
 @@ -0,0 +1,117 @@
@@ -1849,7 +1849,7 @@ index 000000000..2040b4b14
 +}
 diff --git a/src/snitchmd.zig b/src/snitchmd.zig
 new file mode 100644
-index 000000000..5a5b7d909
+index 0000000000000000000000000000000000000000..5a5b7d909de6221f4c10ccccec3847f8005bf033
 --- /dev/null
 +++ b/src/snitchmd.zig
 @@ -0,0 +1,199 @@
@@ -2053,7 +2053,7 @@ index 000000000..5a5b7d909
 +    return false;
 +}
 diff --git a/src/sys/libcurl.zig b/src/sys/libcurl.zig
-index 08c399d59..e732ca68a 100644
+index 08c399d5920d5117cce6d5fac9dabcd8d6c7a4eb..e732ca68a6ad811c3aa32fe21df8a75c54d0608f 100644
 --- a/src/sys/libcurl.zig
 +++ b/src/sys/libcurl.zig
 @@ -616,6 +616,11 @@ pub fn curl_easy_reset(easy: *Curl) void {
@@ -2069,7 +2069,7 @@ index 08c399d59..e732ca68a 100644
      try errorCheck(c.curl_easy_perform(easy));
  }
 diff --git a/src/telemetry/telemetry.zig b/src/telemetry/telemetry.zig
-index 3a7a9583e..5e873f35f 100644
+index 3a7a9583e8b36c7423cbbdc77e9c8a9d7974da9f..5e873f35fab704bc0204df47bc671e04bc2423e5 100644
 --- a/src/telemetry/telemetry.zig
 +++ b/src/telemetry/telemetry.zig
 @@ -8,12 +8,9 @@ const log = lp.log;

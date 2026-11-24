@@ -36,6 +36,16 @@ Needs Zig 0.17, Rust (cargo), git, curl, make.
 ./build.sh prepare    # fetch and patch into build/ without building
 ```
 
+To change Lightpanda:
+
+```sh
+just prepare    # pinned sources + patches into 3rdparty/ (not in git)
+# edit 3rdparty/lightpanda
+just dev        # build it → dist/snitchmd
+just test       # Lightpanda's tests; just test F=name filters
+just patch      # write the edits back to patches/lightpanda.patch, then commit that
+```
+
 Releases are built by GitHub Actions: `just release VERSION` tags and pushes, the workflow builds
 macOS arm64, Linux x86_64 and Linux arm64 and publishes them with notes from CHANGELOG.md.
 

@@ -2,11 +2,12 @@
 # Fetches pinned Lightpanda, BoringSSL, boringssl-zig, curl, and curl-impersonate,
 # applies patches, and builds dist/snitchmd.
 # `build.sh prepare` stops after patching.
+# BUILD_DIR (default build/) is where sources are fetched; `just prepare` uses 3rdparty/.
 set -eu
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 . "$ROOT/versions.env"
-BUILD="$ROOT/build"
+BUILD="${BUILD_DIR:-$ROOT/build}"
 
 mkdir -p "$BUILD/dl"
 export ZIG_GLOBAL_CACHE_DIR="$BUILD/zig-global"
