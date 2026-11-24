@@ -20,10 +20,11 @@ extracts the main content as Markdown, without navigation, footers and banners.
 character count, and `(cached)` for a cache hit.
 
 **Cache.** Successful fetches are cached on disk by URL + options. `--no-cache` fetches again.
+Results with quality below 0.5 are printed but not cached (`(not cached: low quality)` on stderr).
 `--json`, `--html-output` and `--dump-max-bytes` share the cache entry.
 
-**Exit codes.** `0` success, `1` error (network, browser, bad option; message on stderr),
-`2` no main content (a loading shell, a wall, or an empty page).
+**Exit codes.** `0` success, `1` error (network, browser, bad option, bot challenge; message on stderr),
+`2` no main content (a loading shell, a wall, or an empty page), `22` HTTP status 400 or higher.
 
 **Limits.** Passive bot checks (TLS fingerprint, User-Agent, JS identity) pass. Interactive
 CAPTCHAs are not solved; a Cloudflare "Just a moment..." page comes back as the content.

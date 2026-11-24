@@ -23,6 +23,8 @@ One binary instead of a Docker image: patched Lightpanda in place of CloakBrowse
 
 - `--script JS` / `--script-file PATH`: JavaScript run once in the page before extraction,
   e.g. clicking "Show more"; the page then settles again.
+- Exit code 22 when the server answers with status 400 or higher; such pages are not cached.
+- Results with extraction quality below 0.5 are printed but not cached.
 
 ### Kept
 

@@ -612,7 +612,7 @@ index 5dfe5aa70..9bf21d46a 100644
      // Injected scripts run against the DOM too.
      var scripts: std.ArrayList([]const u8) = .empty;
 diff --git a/src/main.zig b/src/main.zig
-index 68a3ba101..ffa28bc8d 100644
+index 68a3ba101..9f9417dcd 100644
 --- a/src/main.zig
 +++ b/src/main.zig
 @@ -24,6 +24,7 @@ const log = lp.log;
@@ -654,7 +654,7 @@ index 68a3ba101..ffa28bc8d 100644
                  .json = opts.json,
              };
  
-@@ -230,6 +237,20 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+@@ -230,6 +237,22 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
                  fetch_opts.writer = &writer.interface;
              }
  
@@ -670,12 +670,14 @@ index 68a3ba101..ffa28bc8d 100644
 +                fetch_opts.json = false;
 +                fetch_opts.dump.max_bytes = null;
 +                fetch_opts.extract.result = &result;
++                // An error page (status 400+) is an error, not a result to cache.
++                fetch_opts.fail_on_http_error = true;
 +            }
 +
              // Browser owns a V8 isolate, which has thread affinity — it must
              // be init/used/deinit on the same thread (fetchThread, below). So
              // we can't treat Browser like the above serve path treats Server.
-@@ -244,7 +265,11 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+@@ -244,7 +267,11 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
              var fetch_err: ?anyerror = null;
              var worker_thread = try std.Thread.spawn(.{}, fetchThread, .{ app, &ft, urls, fetch_opts, &fetch_err });
              worker_thread.join();
@@ -1847,10 +1849,10 @@ index 000000000..2040b4b14
 +}
 diff --git a/src/snitchmd.zig b/src/snitchmd.zig
 new file mode 100644
-index 000000000..caa15a0d5
+index 000000000..5a5b7d909
 --- /dev/null
 +++ b/src/snitchmd.zig
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,199 @@
 +// snitchmd: what `snitchmd URL` adds around a Markdown dump of one URL —
 +// the result cache, the stderr summary, `--json` in the snitchmd v1 format,
 +// `--html-output` and exit code 2 for a page without main content.
@@ -1868,6 +1870,10 @@ index 000000000..caa15a0d5
 +
 +/// Exit code for a page without main content, as in snitchmd v1.
 +pub const exit_empty = 2;
++
++/// Below this extraction quality the result is printed but not cached: a login
++/// wall or an error page served with status 200 scores this low.
++const min_cache_quality = 0.5;
 +
 +/// Output written for one URL; also the cache file format.
 +const Payload = struct {
@@ -1897,7 +1903,7 @@ index 000000000..caa15a0d5
 +        log.warn(.app, "snitchmd cache unreadable", .{ .path = path });
 +        return false;
 +    };
-+    try print(arena, payload, opts, true);
++    try print(arena, payload, opts, .cached);
 +    return true;
 +}
 +
@@ -1918,15 +1924,21 @@ index 000000000..caa15a0d5
 +        try std.Io.Dir.cwd().writeFile(lp.io, .{ .sub_path = path, .data = result.html });
 +    }
 +
-+    // The cache is best-effort.
-+    cachePut(arena, payload, proc_args) catch |err| {
-+        log.warn(.app, "snitchmd cache write failed", .{ .err = err });
-+    };
++    // The cache is best-effort. Served Markdown has no quality and is cached.
++    const cacheable = (payload.quality orelse 1) >= min_cache_quality;
++    if (cacheable) {
++        cachePut(arena, payload, proc_args) catch |err| {
++            log.warn(.app, "snitchmd cache write failed", .{ .err = err });
++        };
++    }
 +
-+    try print(arena, payload, opts, false);
++    try print(arena, payload, opts, if (cacheable) .fresh else .not_cached);
 +}
 +
-+fn print(arena: std.mem.Allocator, payload: Payload, opts: Fetch, cached: bool) !void {
++/// Where the printed result stands with the cache, for the stderr summary.
++const CacheState = enum { fresh, cached, not_cached };
++
++fn print(arena: std.mem.Allocator, payload: Payload, opts: Fetch, cache: CacheState) !void {
 +    const shown = try truncate(arena, payload.markdown, opts.dump_max_bytes);
 +    const truncated = shown.len != payload.markdown.len;
 +
@@ -1964,7 +1976,11 @@ index 000000000..caa15a0d5
 +    if (payload.quality) |q| try stderr.print("{d:.2}", .{q}) else try stderr.writeAll("null");
 +    try stderr.print(" chars={d}", .{charCount(shown)});
 +    if (truncated) try stderr.print(" truncated_from={d}", .{payload.chars});
-+    if (cached) try stderr.writeAll(" (cached)");
++    switch (cache) {
++        .fresh => {},
++        .cached => try stderr.writeAll(" (cached)"),
++        .not_cached => try stderr.writeAll(" (not cached: low quality)"),
++    }
 +    try stderr.writeByte('\n');
 +    try stderr.flush();
 +}

@@ -58,8 +58,9 @@ snitchmd https://paulgraham.com/greatwork.html --json     # Markdown with metada
 
 stderr gets one summary line: title, extraction quality (0–1), character count, and `(cached)` for a cache hit.
 
-**Exit codes.** `0` success; `1` error (network, browser, bad option; message on stderr);
-`2` the page has no main content (a loading shell, a wall, or an empty page).
+**Exit codes.** `0` success; `1` error (network, browser, bad option, bot challenge; message on stderr);
+`2` the page has no main content (a loading shell, a wall, or an empty page);
+`22` the server answered with status 400 or higher.
 
 ### Options
 
@@ -86,6 +87,8 @@ Every `lightpanda fetch` option works (`snitchmd help fetch`). Most used:
 A successful Markdown fetch is cached by URL and options. Repeating the command answers from
 disk without opening the page.
 
+- Not cached: errors, and results with extraction quality below 0.5 (a login wall or an error
+  page served with status 200 scores this low); the summary line says `(not cached: low quality)`.
 - Location: `$SNITCHMD_CACHE_DIR`, else `${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd`.
 - `--json`, `--no-cache`, `--html-output` and `--dump-max-bytes` don't change the cache key.
 - `--no-cache` refreshes one URL; `rm -rf ~/.cache/snitchmd` wipes everything.
