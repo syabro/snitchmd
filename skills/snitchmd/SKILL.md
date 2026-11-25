@@ -11,10 +11,11 @@ Converts any URL to clean Markdown. One command, stdout, ready for an LLM prompt
 
 ## Pipeline
 
-One binary: [Lightpanda](https://github.com/lightpanda-io/browser), a headless browser, patched to
-connect like Safari 27 (TLS, HTTP/2, User-Agent, JS identity). It runs the page's JavaScript, waits
-until the page settles (30 s cap), then [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura)
-extracts the main content as Markdown, without navigation, footers and banners.
+A single binary: [Lightpanda](https://github.com/lightpanda-io/browser), a headless browser patched
+to replicate Safari 27 (TLS, HTTP/2, User-Agent, JS identity). It executes page JavaScript, waits
+for the DOM to settle (up to 30 s), and extracts main content via
+[rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura), stripping navigation, footers,
+and banners.
 
 **Output.** Markdown to **stdout**; one summary line to **stderr**: title, extraction quality (0–1),
 character count, and `(cached)` for a cache hit.
@@ -27,14 +28,14 @@ Results with quality below 0.5 are printed but not cached (`(not cached: low qua
 `2` no main content (a loading shell, a wall, or an empty page), `22` HTTP status 400 or higher.
 
 **Limits.** Passive bot checks (TLS fingerprint, User-Agent, JS identity) pass. Interactive
-CAPTCHAs are not solved; a Cloudflare "Just a moment..." page comes back as the content.
+CAPTCHAs are not solved; a bot challenge that does not pass by itself ends with exit code `1`.
 
 ## Usage
 
 ```bash
 snitchmd https://example.com            # Markdown to stdout
 snitchmd https://example.com > page.md  # save to file
-snitchmd https://example.com --json     # {url, final_url, title, page_title, page_type, quality, chars, markdown}
+snitchmd --json https://example.com     # {url, final_url, title, page_title, page_type, quality, chars, markdown}
 ```
 
 Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
@@ -58,16 +59,21 @@ Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
   --dump html               Rendered HTML instead of Markdown
 ```
 
-## When the output is wrong
+## Fixes for wrong output
 
-| Symptom | Try |
-|---|---|
-| Exit 2 or a near-empty result | `--wait-selector` for the content element, or a larger `--wait-ms` |
-| Content behind a "Show more" button | `--script "document.querySelector('button.more').click()"` |
-| Wrong block extracted | `--dump-selector` with the article's CSS selector |
-| Too much boilerplate | `--favor-precision` |
-| Content missing | `--favor-recall` |
-| Stale result | `--no-cache` |
+- Exit 2 or a near-empty result: `--wait-selector` for the content element, or a larger
+  `--wait-ms`.
+
+- Content behind a "Show more" button:
+  `--script "document.querySelector('button.more').click()"`.
+
+- Wrong block extracted: `--dump-selector` with the article's CSS selector.
+
+- Too much boilerplate: `--favor-precision`.
+
+- Content missing: `--favor-recall`.
+
+- Stale result: `--no-cache`.
 
 ## Installation
 

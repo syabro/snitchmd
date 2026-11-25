@@ -51,56 +51,72 @@ macOS arm64, Linux x86_64 and Linux arm64 and publishes them with notes from CHA
 
 Pinned versions are in `versions.env`. Patches:
 
-| Source | Patch |
-|---|---|
-| curl | curl-impersonate `patches/curl.patch`, unchanged |
-| BoringSSL | curl-impersonate `patches/boringssl.patch`, unchanged |
-| boringssl-zig | `patches/boringssl-zig.patch` (local BoringSSL; source list fixed for BORINGSSL_REV, see versions.env) |
-| Lightpanda | `patches/lightpanda.patch` |
+- curl: curl-impersonate `patches/curl.patch`, unchanged.
+
+- BoringSSL: curl-impersonate `patches/boringssl.patch`, unchanged.
+
+- boringssl-zig: `patches/boringssl-zig.patch`. It uses the local BoringSSL. Its source list is
+  fixed for `BORINGSSL_REV` from versions.env.
+
+- Lightpanda: `patches/lightpanda.patch`.
 
 ## Run
 
 ```sh
 snitchmd https://paulgraham.com/greatwork.html            # Markdown to stdout
 snitchmd https://paulgraham.com/greatwork.html > page.md  # save it
-snitchmd https://paulgraham.com/greatwork.html --json     # Markdown with metadata
+snitchmd --json https://paulgraham.com/greatwork.html     # Markdown with metadata
 ```
 
-stderr gets one summary line: title, extraction quality (0–1), character count, and `(cached)` for a cache hit.
+stderr prints a single summary line: title, extraction quality (0–1), character count, and
+`(cached)` on cache hits.
 
-**Exit codes.** `0` success; `1` error (network, browser, bad option, bot challenge; message on stderr);
-`2` the page has no main content (a loading shell, a wall, or an empty page);
-`22` the server answered with status 400 or higher.
+**Exit codes.** `0` success; `1` error (network, browser, invalid option, or bot challenge; message
+on stderr); `2` no main content found (loading shell, wall, or empty page); `22` HTTP status 400 or
+higher.
 
 ### Options
 
 Every `lightpanda fetch` option works (`snitchmd help fetch`). Most used:
 
-| Option | Effect |
-|---|---|
-| `--json` | `{url, final_url, title, page_title, page_type, quality, chars, markdown}` |
-| `--no-cache` | fetch again instead of answering from the cache |
-| `--html-output FILE` | also save the rendered HTML |
-| `--include-images` | keep image references |
-| `--favor-precision` / `--favor-recall` | cut more boilerplate / keep more content |
-| `--dump-selector CSS` | extract only from the first matching element |
-| `--wait-selector CSS` | wait for an element before extracting |
-| `--script JS` / `--script-file PATH` | run JS in the page before extracting, e.g. click "Show more" |
-| `--wait-ms N` | wait cap in ms (default 30000) |
-| `--dump-max-bytes N` | cut the Markdown at N bytes, ending with `[truncated]` |
-| `--http-proxy URL` | proxy |
-| `--locale TAG`, `--timezone IANA` | browser locale and time zone |
-| `--dump html` | the rendered HTML instead of Markdown |
+- `--json`: prints `{url, final_url, title, page_title, page_type, quality, chars, markdown}`.
+
+- `--no-cache`: fetches again instead of answering from the cache.
+
+- `--html-output FILE`: also saves the rendered HTML.
+
+- `--include-images`: keeps image references.
+
+- `--favor-precision`: cuts more boilerplate.
+
+- `--favor-recall`: keeps more content.
+
+- `--dump-selector CSS`: extracts only from the first matching element.
+
+- `--wait-selector CSS`: waits for an element before extracting.
+
+- `--script JS`, `--script-file PATH`: run JS in the page before extracting, e.g. click "Show
+  more".
+
+- `--wait-ms N`: wait cap in ms. Default 30000.
+
+- `--dump-max-bytes N`: cuts the Markdown at N bytes and ends it with `[truncated]`.
+
+- `--http-proxy URL`: proxy.
+
+- `--locale TAG`, `--timezone IANA`: browser locale and time zone.
+
+- `--dump html`: prints the rendered HTML instead of Markdown.
 
 ### Cache
 
 A successful Markdown fetch is cached by URL and options. Repeating the command answers from
 disk without opening the page.
 
-- Not cached: errors, and results with extraction quality below 0.5 (a login wall or an error
-  page served with status 200 scores this low); the summary line says `(not cached: low quality)`.
-- Location: `$SNITCHMD_CACHE_DIR`, else `${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd`.
-- `--json`, `--no-cache`, `--html-output` and `--dump-max-bytes` don't change the cache key.
+- Not cached: errors, and extractions with quality below 0.5 (such as login walls or 200-OK error
+  pages); stderr notes `(not cached: low quality)`.
+- Location: `$SNITCHMD_CACHE_DIR`, or `${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd`.
+- `--json`, `--no-cache`, `--html-output`, and `--dump-max-bytes` do not alter the cache key.
 - `--no-cache` refreshes one URL; `rm -rf ~/.cache/snitchmd` wipes everything.
 
 ### Built into the binary

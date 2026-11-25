@@ -5,6 +5,27 @@ All notable changes to snitchmd are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-11-25
+
+### Added
+
+- `snitchmd version` prints `snitchmd X.Y.Z (Lightpanda …)`; `version --check` compares it with the
+  latest snitchmd release on GitHub.
+- `mcp`, `serve` and `agent` present themselves as Safari too: Safari User-Agent by default and the
+  built-in Safari JS identity.
+- MCP `markdown` tool and `mcp://page/markdown` extract the page's main content via
+  rs-trafilatura; a page without main content (forms, search, login) is rendered whole, while a
+  `selector` subtree is rendered as is.
+- MCP `goto` (and other MCP tools accepting `url`) gives a bot challenge page up to 30 s more to
+  pass itself, or the rest of the call's `timeout`, instead of reporting the challenge right after
+  load. `agent` scripts don't wait this way.
+- `scripts/test-sites` runs snitchmd over `docs/sites.md`.
+
+### Changed
+
+- The built-in Safari scripts run only with a browser User-Agent (`Mozilla/...`), so
+  `--user-agent-suffix` keeps Lightpanda's identity consistent.
+
 ## [2.0.1] — 2026-11-25
 
 ### Fixed
