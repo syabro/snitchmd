@@ -9,7 +9,7 @@ user-invocable: false
 
 Converts any URL to clean Markdown. One command, stdout, ready for an LLM prompt or a note.
 
-## How it works
+## Pipeline
 
 One binary: [Lightpanda](https://github.com/lightpanda-io/browser), a headless browser, patched to
 connect like Safari 27 (TLS, HTTP/2, User-Agent, JS identity). It runs the page's JavaScript, waits
