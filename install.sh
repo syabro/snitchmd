@@ -24,6 +24,7 @@ fi
 
 case "$(uname -s)-$(uname -m)" in
   Darwin-arm64) asset="snitchmd-darwin-arm64" ;;
+  Darwin-x86_64) asset="snitchmd-darwin-x86_64" ;;
   Linux-x86_64) asset="snitchmd-linux-x86_64" ;;
   Linux-aarch64) asset="snitchmd-linux-arm64" ;;
   *)

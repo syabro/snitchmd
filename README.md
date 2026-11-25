@@ -18,7 +18,7 @@ The previous Docker + CloakBrowser version lives on the `v1` branch.
 curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
 ```
 
-Prebuilt for macOS arm64, Linux x86_64 (glibc 2.35+) and Linux arm64 (glibc 2.38+). Uninstall:
+Prebuilt for macOS arm64, macOS x86_64, Linux x86_64 (glibc 2.35+) and Linux arm64 (glibc 2.38+). Uninstall:
 `curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash -s -- --uninstall`.
 
 For an agent:
@@ -47,7 +47,7 @@ just patch      # write the edits back to patches/lightpanda.patch, then commit 
 ```
 
 Releases are built by GitHub Actions: `just release VERSION` tags and pushes, the workflow builds
-macOS arm64, Linux x86_64 and Linux arm64 and publishes them with notes from CHANGELOG.md.
+macOS arm64, macOS x86_64, Linux x86_64 and Linux arm64 and publishes them with notes from CHANGELOG.md.
 
 Pinned versions are in `versions.env`. Patches:
 

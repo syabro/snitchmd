@@ -21,6 +21,9 @@ jobs:
           - asset: snitchmd-darwin-arm64
             runner: macos-15
             zigflags: -Dcpu=apple_m1
+          - asset: snitchmd-darwin-x86_64
+            runner: macos-26-intel
+            zigflags: -Dcpu=x86_64
           # The oldest available Ubuntu, so the binary runs on older glibc.
           - asset: snitchmd-linux-x86_64
             runner: ubuntu-22.04
