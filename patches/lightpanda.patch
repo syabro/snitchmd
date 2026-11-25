@@ -448,7 +448,7 @@ index 0000000000000000000000000000000000000000..7bd5ed767e2a418d3a47d1ee94ca7861
 +</body>
 +</html>
 diff --git a/src/browser/tools.zig b/src/browser/tools.zig
-index dd817deb130782af5ad0ad85048276a52b98fcbd..8f5e44571df9ce01c5d9a5223349ef5eaff91f76 100644
+index dd817deb130782af5ad0ad85048276a52b98fcbd..4063c431e23b88648536c3b97297e225e51a4371 100644
 --- a/src/browser/tools.zig
 +++ b/src/browser/tools.zig
 @@ -1083,6 +1083,18 @@ fn execMarkdown(arena: std.mem.Allocator, session: *lp.Session, registry: *NodeR
@@ -470,6 +470,81 @@ index dd817deb130782af5ad0ad85048276a52b98fcbd..8f5e44571df9ce01c5d9a5223349ef5e
      lp.markdown.dump(state, .{ .max_bytes = args.maxBytes }, &aw.writer, page) catch return ToolError.InternalError;
      return aw.written();
  }
+@@ -2801,6 +2813,30 @@ const PerformGotoOpts = struct {
+     wait_until: lp.Config.WaitUntil = default_nav_wait,
+ };
+ 
++/// snitchmd: how long a navigation that landed on a bot challenge page waits
++/// for the challenge's own JS to pass it, unless the call gives its own
++/// timeout; `snitchmd URL` waits the same 30 s. A passed challenge navigates
++/// again, which clears `_bot_challenge`.
++const bot_challenge_wait_ms: u32 = 30000;
++
++fn waitOutBotChallenge(runner: *lp.Session.Runner, page: lp.Session.PageHandle, timeout_ms: u32) !void {
++    const Passed = struct {
++        page: lp.Session.PageHandle,
++        pub fn met(self: @This()) !bool {
++            const frame = self.page.frame() orelse return true;
++            return frame._bot_challenge == null and frame._parse_state != .pre;
++        }
++    };
++    const passed: Passed = .{ .page = page };
++    if (try passed.met()) return;
++    const timer: std.Io.Timestamp = .now(lp.io, .boot);
++    try runner.waitUntil(page.frame_id, timeout_ms, passed);
++    // The page after the challenge loads like any navigation.
++    const elapsed: u32 = @intCast(timer.untilNow(lp.io, .boot).toMilliseconds());
++    var conditions = [_]lp.Session.Runner.WaitCondition{.{ .frame_id = page.frame_id, .until = default_nav_wait }};
++    _ = try runner.waitResult(timeout_ms -| elapsed, &conditions);
++}
++
+ fn performGoto(session: *lp.Session, registry: *NodeRegistry, url: [:0]const u8, opts: PerformGotoOpts) ToolError!lp.Session.Runner.WaitResult {
+     if (session.primaryPage()) |old_page| {
+         registry.reset();
+@@ -2815,6 +2851,14 @@ fn performGoto(session: *lp.Session, registry: *NodeRegistry, url: [:0]const u8,
+         return if (err == error.Cancelled) ToolError.Cancelled else ToolError.NavigationFailed;
+     };
+ 
++    if (result == .completed) {
++        waitOutBotChallenge(&runner, page, opts.timeout orelse bot_challenge_wait_ms) catch |err| switch (err) {
++            error.Cancelled => return ToolError.Cancelled,
++            error.Timeout => {},
++            else => return ToolError.NavigationFailed,
++        };
++    }
++
+     // re-fetch frame, navigate might have changed it.
+     const frame = page.frame() orelse return ToolError.NavigationFailed;
+     if (frame._last_navigate_error != null) return ToolError.NavigationFailed;
+@@ -3599,12 +3643,27 @@ test "tools: a bot challenge is named" {
+ 
+     const aa = testing.arena_allocator;
+     const args = try std.json.parseFromSliceLeaky(std.json.Value, aa,
+-        \\{"url":"http://localhost:9582/challenge/vercel"}
++        \\{"url":"http://localhost:9582/challenge/vercel","timeout":300}
+     , .{});
+     const r = try call(aa, session, &registry, "tree", args, .{ .nav_note = true, .source = .user });
+     try std.testing.expect(std.mem.startsWith(u8, r.text, "Blocked by a vercel bot challenge (HTTP 429 Too Many Requests)"));
+ }
+ 
++test "tools: goto waits for a bot challenge to pass" {
++    var registry: NodeRegistry = .init(std.testing.allocator);
++    defer registry.deinit();
++    const session = testing.test_session;
++    defer if (session.primaryPage()) |page| page.close();
++
++    const aa = testing.arena_allocator;
++    const args = try std.json.parseFromSliceLeaky(std.json.Value, aa,
++        \\{"url":"http://localhost:9582/challenge/vercel/pass"}
++    , .{});
++    const r = try call(aa, session, &registry, "goto", args, .{ .source = .user });
++    try std.testing.expectEqualStrings("Navigated. HTTP 200 OK.", r.text);
++    try std.testing.expectEqualStrings("http://localhost:9582/challenge/passed", session.currentFrame().?.url);
++}
++
+ test "tools: navStatus names the status, or says it has none" {
+     var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
+     defer arena.deinit();
 diff --git a/src/browser/tools/definitions.zig b/src/browser/tools/definitions.zig
 index 66ee03c93f858a13ca163cd667681fb50ca4aee8..76ceeda6a120b6d8f4a22309b30f79e73c18e4cd 100644
 --- a/src/browser/tools/definitions.zig
@@ -2480,3 +2555,33 @@ index 3a7a9583e8b36c7423cbbdc77e9c8a9d7974da9f..5e873f35fab704bc0204df47bc671e04
  }
  
  pub const Telemetry = TelemetryT(@import("lightpanda.zig"));
+diff --git a/src/test_routes.zig b/src/test_routes.zig
+index c6c2d5366f94ef9ab635f39ff7e73b5e3f1acd29..d028f846dd07cc1d9a0bac37f1714f887526c2d0 100644
+--- a/src/test_routes.zig
++++ b/src/test_routes.zig
+@@ -548,6 +548,25 @@ pub fn handle(req: *std.http.Server.Request) !void {
+         });
+     }
+ 
++    // snitchmd: a challenge page whose JS passes it by navigating on.
++    if (std.mem.eql(u8, path, "/challenge/vercel/pass")) {
++        return req.respond("<title>Vercel Security Checkpoint</title><script>setTimeout(() => location.replace('/challenge/passed'), 100)</script>", .{
++            .status = .too_many_requests,
++            .extra_headers = &.{
++                .{ .name = "Content-Type", .value = "text/html; charset=utf-8" },
++                .{ .name = "x-vercel-mitigated", .value = "challenge" },
++            },
++        });
++    }
++
++    if (std.mem.eql(u8, path, "/challenge/passed")) {
++        return req.respond("<title>Passed</title><p>The requested content</p>", .{
++            .extra_headers = &.{
++                .{ .name = "Content-Type", .value = "text/html; charset=utf-8" },
++            },
++        });
++    }
++
+     if (std.mem.startsWith(u8, path, "/status/")) {
+         const code = try std.fmt.parseInt(u16, path["/status/".len..], 10);
+         return req.respond("", .{ .status = @fromBackingInt(@intCast(code)) });
