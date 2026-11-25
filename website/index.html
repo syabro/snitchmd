@@ -30,10 +30,26 @@
       transition: background 140ms ease, color 140ms ease;
     }
 
-    .page {
+    .container {
       max-width: 1040px;
       margin: 0 auto;
-      padding: 48px 32px 96px;
+      padding-inline: 32px;
+    }
+    .band {
+      padding-block: 80px;
+      background: var(--bg);
+      transition: background 140ms ease;
+    }
+    .band-alt {
+      background: var(--bg-alt);
+    }
+    .band-hero {
+      padding-top: 48px;
+      padding-bottom: 80px;
+    }
+    .band-closing {
+      padding-top: 80px;
+      padding-bottom: 48px;
     }
 
     /* Top bar */
@@ -109,10 +125,10 @@
 
     /* Shared section spacing & headings */
     .section {
-      margin-top: 64px;
+      margin-top: 80px;
     }
     .section-title {
-      margin: 0 0 16px;
+      margin: 0 0 24px;
       font-weight: 800;
       font-size: var(--size-title);
       letter-spacing: -0.02em;
@@ -122,14 +138,14 @@
     .grid-2 {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      column-gap: 48px;
+      column-gap: 56px;
       row-gap: 0;
     }
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      column-gap: 32px;
-      row-gap: 24px;
+      column-gap: 48px;
+      row-gap: 32px;
     }
     .col {
       min-width: 0;
@@ -194,7 +210,7 @@
     dialog.modal {
       margin: auto;
       padding: 28px 32px 32px;
-      width: min(760px, calc(100vw - 32px));
+      width: min(840px, calc(100vw - 32px));
       background: var(--surface-modal, var(--bg));
       color: var(--ink);
       border: 1px solid var(--border);
@@ -208,7 +224,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
     .modal-head .section-title {
       margin: 0;
@@ -247,10 +263,10 @@
     }
     .install-list {
       display: grid;
-      gap: 18px;
+      gap: 28px;
     }
     .install-label {
-      margin: 0 0 6px;
+      margin: 0 0 10px;
       font-size: var(--size-body);
       color: var(--ink);
     }
@@ -258,12 +274,13 @@
       font-weight: 800;
     }
     .install-cmd {
-      margin: 0;
-      width: 100%;
-      border: 1px solid var(--border);
-      padding: 10px 14px;
+      margin: 0 -14px;
+      width: calc(100% + 28px);
+      background: var(--surface-code);
+      border: 0;
+      padding: 12px 14px;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 16px;
       font-family: var(--font-mono);
@@ -271,7 +288,20 @@
       font-weight: 600;
       color: var(--ink);
     }
+    .install-cmd-text {
+      display: flex;
+      align-items: flex-start;
+      gap: 1ch;
+      flex: 1;
+      min-width: 0;
+      line-height: 1.5;
+    }
+    .install-cmd-text .prompt {
+      flex-shrink: 0;
+    }
     .install-cmd code {
+      flex: 1;
+      min-width: 0;
       font-family: inherit;
       font-size: inherit;
       font-weight: inherit;
@@ -318,7 +348,7 @@
       display: block;
     }
 
-    /* Demo */
+    /* 1. Demo */
     .demo-grid {
       align-items: start;
     }
@@ -335,20 +365,21 @@
       }
     }
     .demo-heading {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      position: relative;
       margin: 0;
       font-weight: 800;
       font-size: var(--size-title);
       letter-spacing: -0.02em;
       line-height: 1.15;
+      color: var(--ink);
     }
     .demo-heading span {
       font-weight: 400;
     }
     .demo-mark {
-      flex-shrink: 0;
+      position: absolute;
+      left: -24px;
+      top: 0.2em;
       width: 16px;
       height: 16px;
       fill: none;
@@ -358,14 +389,16 @@
       stroke-linejoin: miter;
     }
     .demo-sub {
-      margin: 6px 0 20px;
+      margin: 8px 0 20px;
       font-size: var(--size-body);
-      line-height: 1.45;
+      line-height: 1.5;
+      color: var(--ink);
     }
     .cmd {
-      margin: 0 0 10px;
-      padding-left: 2ch;
+      margin: 0 -12px 12px;
+      padding: 8px 12px 8px calc(12px + 2ch);
       text-indent: -2ch;
+      background: var(--surface-code);
       font-family: var(--font-mono);
       font-size: var(--size-mono);
       font-weight: 600;
@@ -375,13 +408,14 @@
     .prompt {
       color: var(--muted);
       font-weight: 400;
+      user-select: none;
     }
-    pre {
+    .demo-output {
       margin: 0;
-      padding: 0 0 0 2ch;
+      padding: 0;
       font-family: var(--font-mono);
       font-size: var(--size-mono);
-      line-height: 1.55;
+      line-height: 1.6;
       color: var(--muted);
       white-space: pre-wrap;
       overflow-wrap: break-word;
@@ -389,85 +423,128 @@
     .tok-ink  { color: var(--ink); }
     .tok-bold { color: var(--ink); font-weight: 600; }
 
-    /* Built for real sites (3 columns) & Usage */
+    /* 2. Features */
     .feature-title {
-      margin: 0 0 6px;
+      margin: 0 0 10px;
       font-weight: 800;
-      font-size: var(--size-body);
-      line-height: 1.35;
+      font-size: var(--size-title);
+      letter-spacing: -0.02em;
+      line-height: 1.15;
       color: var(--ink);
     }
     .feature-desc {
       margin: 0;
       font-size: var(--size-body);
-      line-height: 1.5;
+      line-height: 1.55;
       color: var(--ink);
+    }
+
+    /* 3. Usage */
+    .usage-box {
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto;
     }
     .usage-list {
       display: grid;
-      gap: 16px;
+      gap: 32px;
+    }
+    .usage-item {
+      min-width: 0;
     }
     .usage-item .cmd {
-      margin-bottom: 4px;
+      margin-bottom: 8px;
     }
     .usage-desc {
       margin: 0;
-      padding-left: 2ch;
       font-size: var(--size-body);
-      line-height: 1.45;
+      line-height: 1.5;
+      color: var(--ink);
     }
     .install-label code,
     .usage-desc code {
       font-family: var(--font-mono);
       font-size: var(--size-mono);
       font-weight: 600;
+      color: var(--ink);
     }
 
-    /* Pipeline (3-stage horizontal strip, aligned to grid-3) */
-    .pipeline {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      column-gap: 32px;
-      row-gap: 24px;
+    /* 4. Closing CTA & Footer */
+    .closing {
+      text-align: center;
     }
-    .stage {
-      min-width: 0;
-    }
-    .stage-title {
+    .closing-title {
+      margin: 0;
       font-weight: 800;
-      font-size: var(--size-body);
+      font-size: var(--size-title);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: var(--ink);
     }
-    .stage-kind {
-      margin-top: 2px;
+    .closing-sub {
+      margin: 10px 0 0;
+      font-size: var(--size-body);
+      color: var(--ink);
+    }
+    .closing .hero-actions {
+      justify-content: center;
+      margin-top: 24px;
+    }
+    .footer {
+      margin-top: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
       font-family: var(--font-mono);
       font-size: var(--size-mono);
+      color: var(--muted);
     }
-    .stage-desc {
-      margin-top: 8px;
-      font-size: var(--size-body);
-      line-height: 1.45;
+    .footer a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .footer a:hover {
+      color: var(--ink);
     }
 
     @media (max-width: 720px) {
-      .page {
-        padding: 32px 20px 72px;
+      .container {
+        padding-inline: 20px;
+      }
+      .band {
+        padding-block: 56px;
+      }
+      .band-hero {
+        padding-top: 32px;
+        padding-bottom: 56px;
+      }
+      .band-closing {
+        padding-top: 56px;
+        padding-bottom: 40px;
       }
       .topbar {
         margin-bottom: 36px;
       }
       .section {
-        margin-top: 48px;
+        margin-top: 56px;
       }
       .grid-2 {
         grid-template-columns: 1fr;
-        gap: 40px;
+        gap: 48px;
+      }
+      .demo-heading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .demo-mark {
+        position: static;
+        flex-shrink: 0;
       }
       .grid-3 {
         grid-template-columns: 1fr;
-        row-gap: 24px;
-      }
-      .pipeline {
-        grid-template-columns: 1fr;
+        row-gap: 32px;
       }
       dialog.modal {
         padding: 20px;
@@ -512,16 +589,16 @@
   </style>
 </head>
 <body>
-  <div class="page">
-
-    <div class="topbar">
-      <div class="switch" role="group" aria-label="Theme">
-        <button type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
-        <button type="button" data-theme-choice="light" aria-pressed="false">light</button>
+  <div class="band band-hero">
+    <div class="container">
+      <div class="topbar">
+        <div class="switch" role="group" aria-label="Theme">
+          <button type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+          <button type="button" data-theme-choice="light" aria-pressed="false">light</button>
+        </div>
       </div>
-    </div>
 
-    <header class="hero">
+      <header class="hero">
       <h1 class="wordmark">snitchmd</h1>
       <p class="lead">
         Fetch clean Markdown for LLMs and AI agents, bypassing Cloudflare and JS protection.
@@ -530,7 +607,7 @@
         </span>
       </p>
       <div class="hero-actions">
-        <button class="install-trigger" type="button" id="open-install">Install</button>
+        <button class="install-trigger" type="button" id="open-install" data-open-install>Install</button>
         <a class="github-link" href="https://github.com/syabro/snitchmd">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
           <span>GitHub</span>
@@ -549,26 +626,10 @@
       </div>
       <div class="install-list">
         <div>
-          <p class="install-label"><strong>Terminal</strong> — installs to <code>/usr/local/bin</code> or <code>~/.local/bin</code></p>
+          <p class="install-label">Installs the binary to <code>/usr/local/bin</code> or <code>~/.local/bin</code> and the skill for Claude Code, Cursor, and Codex.</p>
           <div class="install-cmd">
-            <code><span class="prompt">$ </span>curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash</code>
+            <span class="install-cmd-text"><span class="prompt" aria-hidden="true">$</span><code>curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash</code></span>
             <button class="copy-btn" type="button" aria-label="Copy install command" data-copy="curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash">
-              <svg class="icon-copy" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
-                <rect x="5.5" y="5.5" width="8" height="8"></rect>
-                <path d="M10.5 5.5V2.5H2.5V10.5H5.5"></path>
-              </svg>
-              <svg class="icon-check" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
-                <path d="M2.5 8.5l4 4L13.5 4.5"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <p class="install-label"><strong>AI agent</strong> — paste install command into Claude Code, Codex, Copilot, or Cursor</p>
-          <div class="install-cmd">
-            <code>Read https://github.com/syabro/snitchmd/blob/master/README.md<br />and install<br />https://raw.githubusercontent.com/syabro/snitchmd/master/skills/snitchmd/SKILL.md</code>
-            <button class="copy-btn" type="button" aria-label="Copy agent prompt" data-copy="Read https://github.com/syabro/snitchmd/blob/master/README.md and install https://raw.githubusercontent.com/syabro/snitchmd/master/skills/snitchmd/SKILL.md">
               <svg class="icon-copy" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
                 <rect x="5.5" y="5.5" width="8" height="8"></rect>
                 <path d="M10.5 5.5V2.5H2.5V10.5H5.5"></path>
@@ -588,9 +649,9 @@
           <svg class="demo-mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg>
           <span><strong>curl</strong> returns Cloudflare 403</span>
         </h2>
-        <p class="demo-sub">Challenge HTML, no page content.</p>
+        <p class="demo-sub">Blocked as a bot.<br />Returns a challenge page instead of the article.</p>
         <div class="cmd"><span class="prompt">$ </span>curl https://stackoverflow.com/questions/11227809</div>
-        <pre>&lt;!DOCTYPE html&gt;&lt;<span class="tok-bold">html</span> lang=<span class="tok-ink">"en-US"</span>&gt;
+        <pre class="demo-output">&lt;!DOCTYPE html&gt;&lt;<span class="tok-bold">html</span> lang=<span class="tok-ink">"en-US"</span>&gt;
 &lt;<span class="tok-bold">head</span>&gt;
   &lt;<span class="tok-bold">title</span>&gt;<span class="tok-ink">Just a moment...</span>&lt;/<span class="tok-bold">title</span>&gt;
   &lt;<span class="tok-bold">noscript</span>&gt;
@@ -605,9 +666,9 @@
           <svg class="demo-mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8.5l4 4L14 4.5"/></svg>
           <span><strong>snitchmd</strong> returns clean Markdown</span>
         </h2>
-        <p class="demo-sub">Passes JS challenge, strips menus and footers, prints Markdown.</p>
+        <p class="demo-sub">Passes bot protection.<br />Strips menus and footers, prints Markdown.</p>
         <div class="cmd"><span class="prompt">$ </span>snitchmd https://stackoverflow.com/questions/11227809</div>
-        <pre><span class="tok-ink">In this C++ code, sorting the data (</span><span class="tok-bold">*before*</span>
+        <pre class="demo-output"><span class="tok-ink">In this C++ code, sorting the data (</span><span class="tok-bold">*before*</span>
 <span class="tok-ink">the timed region) makes the primary loop
 ~6x faster:</span>
 
@@ -617,70 +678,76 @@
 <span class="tok-bold">#include</span> &lt;<span class="tok-ink">iostream</span>&gt;</pre>
       </div>
     </section>
+    </div>
+  </div>
 
-    <section class="section" aria-label="Features">
+  <section class="band band-alt" aria-label="Features">
+    <div class="container">
       <div class="grid-3">
         <div class="col">
           <h2 class="feature-title">Passes bot protection</h2>
           <p class="feature-desc">Clears Cloudflare, DataDome, AWS WAF, and JS challenges on Stack Overflow, Reddit, NYTimes, WSJ, FT, and IMDb.</p>
         </div>
         <div class="col">
-          <h2 class="feature-title">Local cache</h2>
-          <p class="feature-desc">Extracted Markdown is cached locally, so repeat fetches of the same URL return immediately.</p>
+          <h2 class="feature-title">Fast on repeat calls</h2>
+          <p class="feature-desc">Saved to disk after the first fetch, so repeat calls for the same URL return immediately.</p>
         </div>
         <div class="col">
-          <h2 class="feature-title">No cloud dependencies</h2>
-          <p class="feature-desc">No cloud proxy, no rate limits, no subscription fees.</p>
+          <h2 class="feature-title">Ready for AI agents</h2>
+          <p class="feature-desc">Built-in MCP server plus clean Markdown and JSON output for Claude Code, Cursor, and Codex.</p>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="section" aria-label="Usage">
-      <h2 class="section-title">Usage</h2>
-      <div class="usage-list">
-        <div class="usage-item">
-          <div class="cmd"><span class="prompt">$ </span>snitchmd https://paulgraham.com/greatwork.html</div>
-          <p class="usage-desc">Clean article Markdown to <code>stdout</code> — pipe into an LLM.</p>
-        </div>
-        <div class="usage-item">
-          <div class="cmd"><span class="prompt">$ </span>snitchmd --json https://paulgraham.com/greatwork.html</div>
-          <p class="usage-desc">JSON with title, final URL, and Markdown for scripts and pipelines.</p>
-        </div>
-        <div class="usage-item">
-          <div class="cmd"><span class="prompt">$ </span>snitchmd --script "document.querySelector('button.more').click()" https://example.com</div>
-          <p class="usage-desc">Custom JS before extraction — click "Show more", close popups, or load hidden content.</p>
-        </div>
-        <div class="usage-item">
-          <div class="cmd"><span class="prompt">$ </span>snitchmd mcp</div>
-          <p class="usage-desc">Built-in MCP server for Claude Code, Cursor, Codex, and other AI agents.</p>
+  <section class="band" aria-label="Usage">
+    <div class="container">
+      <div class="usage-box">
+        <h2 class="section-title">Usage</h2>
+        <div class="usage-list">
+          <div class="usage-item">
+            <div class="cmd"><span class="prompt">$ </span>snitchmd https://paulgraham.com/greatwork.html</div>
+            <p class="usage-desc">Prints clean Markdown to <code>stdout</code> — ready to pipe into an LLM.</p>
+          </div>
+          <div class="usage-item">
+            <div class="cmd"><span class="prompt">$ </span>snitchmd --json https://paulgraham.com/greatwork.html</div>
+            <p class="usage-desc">Returns JSON with title, final URL, and Markdown for scripts and pipelines.</p>
+          </div>
+          <div class="usage-item">
+            <div class="cmd"><span class="prompt">$ </span>snitchmd --dump-selector "table.infobox" https://en.wikipedia.org/wiki/Markdown</div>
+            <p class="usage-desc">Extracts only the matching CSS selector — here, the Wikipedia infobox as a Markdown table.</p>
+          </div>
+          <div class="usage-item">
+            <div class="cmd"><span class="prompt">$ </span>snitchmd mcp</div>
+            <p class="usage-desc">Starts an MCP server for Claude Code, Cursor, Codex, and other AI agents.</p>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="section" aria-label="Inside one binary">
-      <h2 class="section-title">Inside one binary</h2>
-      <div class="pipeline">
-        <div class="stage">
-          <div class="stage-title">1. Safari TLS &amp; HTTP/2</div>
-          <div class="stage-kind">curl-impersonate · BoringSSL</div>
-          <div class="stage-desc">Connects with real Safari network fingerprints instead of a bot signature.</div>
+  <div class="band band-alt band-closing">
+    <div class="container">
+      <section class="closing" aria-label="Get started">
+        <h2 class="closing-title">One binary. Clean Markdown.</h2>
+        <p class="closing-sub">Runs locally on macOS and Linux.</p>
+        <div class="hero-actions">
+          <button class="install-trigger" type="button" data-open-install>Install</button>
+          <a class="github-link" href="https://github.com/syabro/snitchmd">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+            <span>GitHub</span>
+          </a>
         </div>
-        <div class="stage">
-          <div class="stage-title">2. Page JavaScript</div>
-          <div class="stage-kind">Lightpanda</div>
-          <div class="stage-desc">Runs page scripts and waits for anti-bot challenges to clear.</div>
-        </div>
-        <div class="stage">
-          <div class="stage-title">3. Clean Markdown</div>
-          <div class="stage-kind">rs-trafilatura</div>
-          <div class="stage-desc">Extracts the main article from the DOM, dropping menus, banners, and footers.</div>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <span class="sr-only" id="copy-status" aria-live="polite"></span>
-
+      <footer class="footer">
+        <span>snitchmd</span>
+        <a href="https://github.com/syabro/snitchmd">github.com/syabro/snitchmd</a>
+      </footer>
+    </div>
   </div>
+
+  <span class="sr-only" id="copy-status" aria-live="polite"></span>
 
   <script>
     (() => {
@@ -758,11 +825,11 @@
 
     (() => {
       const modal = document.getElementById("install-modal");
-      const openBtn = document.getElementById("open-install");
+      const openBtns = document.querySelectorAll("[data-open-install]");
       const closeBtn = document.getElementById("close-install");
-      if (!modal || !openBtn) return;
+      if (!modal || !openBtns.length) return;
 
-      openBtn.addEventListener("click", () => modal.showModal());
+      openBtns.forEach((btn) => btn.addEventListener("click", () => modal.showModal()));
       closeBtn?.addEventListener("click", () => modal.close());
       modal.addEventListener("click", (event) => {
         if (event.target === modal) modal.close();
