@@ -46,20 +46,35 @@
     }
     .switch {
       display: inline-flex;
-      gap: 16px;
+      gap: 8px;
+      margin: -6px -4px;
     }
     .switch button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
       background: none;
       border: 0;
-      padding: 0 0 2px;
+      padding: 6px 4px;
       font: inherit;
       color: var(--muted);
       cursor: pointer;
-      border-bottom: 1px solid transparent;
+    }
+    .switch button::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      height: 1px;
+      background: transparent;
     }
     .switch button[aria-pressed="true"] {
       color: var(--ink);
-      border-bottom-color: var(--ink);
+    }
+    .switch button[aria-pressed="true"]::after {
+      background: var(--ink);
     }
 
     /* Hero */
@@ -155,6 +170,9 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      min-height: 28px;
+      padding: 6px 4px;
+      margin: -6px -4px;
       color: var(--ink);
       text-decoration: none;
       font-family: var(--font-mono);
@@ -177,7 +195,7 @@
       margin: auto;
       padding: 28px 32px 32px;
       width: min(760px, calc(100vw - 32px));
-      background: var(--bg);
+      background: var(--surface-modal, var(--bg));
       color: var(--ink);
       border: 1px solid var(--border);
       border-radius: 0;
@@ -199,8 +217,9 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
+      margin: -4px -6px -4px 0;
       padding: 0;
       background: none;
       border: 0;
@@ -211,12 +230,14 @@
     .modal-close:hover {
       color: var(--ink);
     }
+    .switch button:focus:not(:focus-visible),
     .modal-close:focus:not(:focus-visible),
     .install-trigger:focus:not(:focus-visible),
     .github-link:focus:not(:focus-visible),
     .copy-btn:focus:not(:focus-visible) {
       outline: none;
     }
+    .switch button:focus-visible,
     .modal-close:focus-visible,
     .install-trigger:focus-visible,
     .github-link:focus-visible,
@@ -261,8 +282,9 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 20px;
-      height: 20px;
+      width: 28px;
+      height: 28px;
+      margin: -4px -4px -4px 0;
       padding: 0;
       background: none;
       border: 0;
@@ -270,6 +292,17 @@
       cursor: pointer;
       flex-shrink: 0;
       transition: color 120ms ease;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
     }
     .copy-btn:hover,
     .copy-btn[data-copied="true"] {
@@ -439,6 +472,42 @@
       dialog.modal {
         padding: 20px;
       }
+      .switch {
+        margin: -14px -6px;
+      }
+      .switch button {
+        min-height: 44px;
+        padding: 14px 6px;
+      }
+      .switch button::after {
+        left: 6px;
+        right: 6px;
+        bottom: 12px;
+      }
+      .install-trigger {
+        height: 44px;
+      }
+      .github-link {
+        min-height: 44px;
+        padding: 14px 6px;
+        margin: -14px -6px;
+      }
+      .modal-close {
+        width: 44px;
+        height: 44px;
+        margin: -10px -12px -10px 0;
+      }
+      .copy-btn {
+        width: 44px;
+        height: 44px;
+        margin: -10px -10px -10px 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition: none !important;
+      }
     }
   </style>
 </head>
@@ -579,7 +648,7 @@
         </div>
         <div class="usage-item">
           <div class="cmd"><span class="prompt">$ </span>snitchmd --script "document.querySelector('button.more').click()" https://example.com</div>
-          <p class="usage-desc">Runs JS on the page before extracting — click "Show more", close popups, or load hidden content.</p>
+          <p class="usage-desc">Custom JS before extraction — click "Show more", close popups, or load hidden content.</p>
         </div>
         <div class="usage-item">
           <div class="cmd"><span class="prompt">$ </span>snitchmd mcp</div>
@@ -608,6 +677,8 @@
         </div>
       </div>
     </section>
+
+    <span class="sr-only" id="copy-status" aria-live="polite"></span>
 
   </div>
 
@@ -700,6 +771,7 @@
 
     (() => {
       const buttons = document.querySelectorAll(".copy-btn");
+      const status = document.getElementById("copy-status");
       buttons.forEach((btn) => {
         const defaultLabel = btn.getAttribute("aria-label") || "Copy";
         let timer;
@@ -707,10 +779,12 @@
           navigator.clipboard?.writeText(btn.dataset.copy);
           btn.dataset.copied = "true";
           btn.setAttribute("aria-label", "Copied!");
+          if (status) status.textContent = "Copied";
           clearTimeout(timer);
           timer = setTimeout(() => {
             delete btn.dataset.copied;
             btn.setAttribute("aria-label", defaultLabel);
+            if (status && status.textContent === "Copied") status.textContent = "";
           }, 1500);
         });
       });

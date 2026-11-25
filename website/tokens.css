@@ -4,6 +4,7 @@
   color-scheme: light dark;
 
   --bg: light-dark(#ffffff, #0d0d0e);
+  --surface-modal: light-dark(#ffffff, #141416);
   --border: light-dark(#d4d4d8, #2a2a2e);
   --ink: light-dark(#111113, #f5f5f5);
   --muted: light-dark(#52525b, #a1a1aa);
@@ -11,7 +12,13 @@
   --font-sans: "Archivo", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --size-title: 20px;
-  --size-body: 14px;
-  --size-mono: 12px;
+  --size-title: 1.25rem;
+  --size-body: 0.875rem;
+  --size-mono: 0.75rem;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --border: light-dark(#71717a, #71717a);
+  }
 }
