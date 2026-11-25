@@ -20,7 +20,7 @@ Command: `snitchmd https://tls.peet.ws/api/all --no-cache --dump html`.
 
 From CloakBrowser's `tests/test_stealth.py`. The v1 (CloakBrowser 0.3.31) and plain Lightpanda 1.0.5 results are from 2026-11-22. v2 was not run.
 
-| URL                                                                | What it shows                                       | v1                                                  | Lightpanda 1.0.5                              |
+| URL                                                                | Checks                                              | v1                                                  | Lightpanda 1.0.5                              |
 | ------------------------------------------------------------------ | --------------------------------------------------- | --------------------------------------------------- | --------------------------------------------- |
 | https://bot.sannysoft.com                                          | classic headless checks                             | all passed                                          | 7 failed (no `window.chrome`, plugins, WebGL) |
 | https://bot.incolumitas.com                                        | fpscanner + behaviour                               | 1 FAIL (WEBDRIVER, false positive for every Chrome) | 4 FAIL                                        |
