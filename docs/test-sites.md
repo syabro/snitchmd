@@ -86,19 +86,26 @@ Prototype on 33 sites (NYTimes and The Athletic left out): 30 ✓ / 2 ◐ / 1 ×
 
 ## 4. Extraction quality
 
-| Source                                                                                                                                                                                                                       | What                                                            |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| The 8 pages compared on 2026-11-22: Wikipedia (Web scraping), StackOverflow 11227809, GitHub lightpanda-io/browser, IMDb tt0111161, Goodreads 1984, https://paulgraham.com/greatwork.html, The Atlantic home, MDN User-Agent | main text kept, navigation dropped, nothing cut off             |
-| https://en.wikipedia.org/wiki/Red_panda                                                                                                                                                                                      | known: 11.8 MB of padded navigation tables                      |
-| [scrapinghub/article-extraction-benchmark](https://github.com/scrapinghub/article-extraction-benchmark)                                                                                                                      | 181 articles with ground truth; rs-trafilatura reports F1 0.966 |
-| [Web Content Extraction Benchmark](https://github.com/Murrough-Foley/web-content-extraction-benchmark)                                                                                                                       | 1,497 pages of 7 page types; rs-trafilatura reports F1 0.859    |
+- **8 pages compared on 2026-11-22** — main text kept, navigation dropped, nothing cut off:
+  - https://en.wikipedia.org/wiki/Web_scraping
+  - https://stackoverflow.com/questions/11227809
+  - https://github.com/lightpanda-io/browser
+  - https://www.imdb.com/title/tt0111161/
+  - https://www.goodreads.com/book/show/5470.1984
+  - https://paulgraham.com/greatwork.html
+  - https://www.theatlantic.com/
+  - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
+- **https://en.wikipedia.org/wiki/Red_panda** — known: 11.8 MB of padded navigation tables.
+- **[scrapinghub/article-extraction-benchmark](https://github.com/scrapinghub/article-extraction-benchmark)** —
+  181 articles with ground truth; rs-trafilatura reports F1 0.966.
+- **[Web Content Extraction Benchmark](https://github.com/Murrough-Foley/web-content-extraction-benchmark)** —
+  1,497 pages of 7 page types; rs-trafilatura reports F1 0.859.
 
 The two benchmarks are offline HTML with ground truth: they test rs-trafilatura,
 not fetching.
 
 ## 5. Lightpanda engine
 
-| URL                                                   | What                                                                          |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------- |
-| https://demo-browser.lightpanda.io/                   | Lightpanda's own end-to-end target (`.github/workflows/agent-regression.yml`) |
-| https://demo-browser.lightpanda.io/campfire-commerce/ | JS-rendered shop page                                                         |
+- https://demo-browser.lightpanda.io/ — Lightpanda's own end-to-end target
+  (`.github/workflows/agent-regression.yml`).
+- https://demo-browser.lightpanda.io/campfire-commerce/ — JS-rendered shop page.
