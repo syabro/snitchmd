@@ -1,9 +1,19 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>snitchmd</title>
+  <script>
+    (function () {
+      try {
+        var m = localStorage.getItem("snitchmd-theme-mode");
+        if (m === "light" || m === "dark") {
+          document.documentElement.style.colorScheme = m;
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -47,7 +57,7 @@
       cursor: pointer;
       border-bottom: 1px solid transparent;
     }
-    .switch button.active {
+    .switch button[aria-pressed="true"] {
       color: var(--ink);
       border-bottom-color: var(--ink);
     }
@@ -259,9 +269,9 @@
   <div class="page">
 
     <div class="controls">
-      <div class="switch">
-        <button id="btn-dark" onclick="setTheme('dark')">dark</button>
-        <button id="btn-light" class="active" onclick="setTheme('light')">light</button>
+      <div class="switch" role="group" aria-label="Theme">
+        <button type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+        <button type="button" data-theme-choice="light" aria-pressed="false">light</button>
       </div>
     </div>
 
@@ -353,11 +363,78 @@
   </div>
 
   <script>
-    function setTheme(theme) {
-      document.documentElement.setAttribute("data-theme", theme);
-      document.getElementById("btn-dark").classList.toggle("active", theme === "dark");
-      document.getElementById("btn-light").classList.toggle("active", theme === "light");
-    }
+    (() => {
+      const storageKey = "snitchmd-theme-mode";
+      const wrapper = document.querySelector(".switch");
+      if (!wrapper) return;
+
+      const root = document.documentElement;
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const buttons = Array.from(wrapper.querySelectorAll("[data-theme-choice]"));
+
+      const normalize = (value) =>
+        value === "light" || value === "dark" || value === "auto" ? value : "auto";
+
+      const systemTheme = () => (mediaQuery.matches ? "dark" : "light");
+
+      const effectiveTheme = (mode) =>
+        normalize(mode) === "auto" ? systemTheme() : normalize(mode);
+
+      const modeForChoice = (choice) => {
+        const selected = choice === "dark" ? "dark" : "light";
+        return selected === systemTheme() ? "auto" : selected;
+      };
+
+      const applyTheme = (mode) => {
+        root.style.colorScheme = mode === "auto" ? "light dark" : mode;
+      };
+
+      const syncState = (mode) => {
+        const current = effectiveTheme(mode);
+        buttons.forEach((button) => {
+          button.setAttribute("aria-pressed", button.dataset.themeChoice === current ? "true" : "false");
+        });
+      };
+
+      const readSaved = () => {
+        try {
+          return normalize(localStorage.getItem(storageKey) || "auto");
+        } catch (e) {
+          return "auto";
+        }
+      };
+
+      const setMode = (mode) => {
+        const current = normalize(mode);
+        try {
+          localStorage.setItem(storageKey, current);
+        } catch (e) {}
+        applyTheme(current);
+        syncState(current);
+      };
+
+      const savedMode = readSaved();
+      applyTheme(savedMode);
+      syncState(savedMode);
+
+      wrapper.addEventListener("click", (event) => {
+        const button = event.target.closest?.("[data-theme-choice]");
+        if (!button || !wrapper.contains(button)) return;
+        setMode(modeForChoice(button.dataset.themeChoice));
+      });
+
+      const onSystemChange = () => {
+        const mode = readSaved();
+        applyTheme(mode);
+        syncState(mode);
+      };
+
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener("change", onSystemChange);
+      } else {
+        mediaQuery.addListener(onSystemChange);
+      }
+    })();
   </script>
 </body>
 </html>

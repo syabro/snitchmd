@@ -1,11 +1,12 @@
 /* snitchmd — minimal monochrome design tokens */
 
-:root,
-[data-theme="light"] {
-  --bg: #ffffff;
-  --border: #d4d4d8;
-  --ink: #111113;
-  --muted: #52525b;
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#ffffff, #0d0d0e);
+  --border: light-dark(#d4d4d8, #2a2a2e);
+  --ink: light-dark(#111113, #f5f5f5);
+  --muted: light-dark(#52525b, #a1a1aa);
 
   --font-sans: "Archivo", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -13,11 +14,4 @@
   --size-title: 20px;
   --size-body: 14px;
   --size-mono: 12px;
-}
-
-[data-theme="dark"] {
-  --bg: #0d0d0e;
-  --border: #2a2a2e;
-  --ink: #f5f5f5;
-  --muted: #a1a1aa;
 }
