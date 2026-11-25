@@ -34,7 +34,7 @@ index ec08091d2d4c4c990b792c5eb8c9e3fc9e7529fb..81b8b2168784abcdbea5e834a4f3a8d3
              .url = "https://sqlite.org/2026/sqlite-amalgamation-3530200.zip",
              .hash = "N-V-__8AALc_rgC04POe18O0LKFRm4ouQpLtL3riscEmWp-Q",
 diff --git a/src/Config.zig b/src/Config.zig
-index 7368bdc92bff69b76e61bd616a68504eac8c16cc..ff669126dbe163fab62638210d0968c4a968906c 100644
+index 7368bdc92bff69b76e61bd616a68504eac8c16cc..3dca6387b9ef54eb435977495fa09c146ee6f587 100644
 --- a/src/Config.zig
 +++ b/src/Config.zig
 @@ -417,6 +417,18 @@ fn waitScriptFileValidator(allocator: Allocator, args: *std.process.Args.Iterato
@@ -147,7 +147,26 @@ index 7368bdc92bff69b76e61bd616a68504eac8c16cc..ff669126dbe163fab62638210d0968c4
  test "Config: parseArgs --http-version" {
      // parseArgs allocations live for the process; an arena stands in for main's.
      var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-@@ -1849,8 +1887,10 @@ fn accumulateValidator(allocator: Allocator, args: *std.process.Args.Iterator, f
+@@ -1639,6 +1677,18 @@ test "Config: parseArgs tells a url from a misspelt command" {
+     }
+ }
+ 
++test "Config: parseArgs takes fetch flags before the url" {
++    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
++    defer arena.deinit();
++
++    const argv = [_][*:0]const u8{ "lightpanda", "--json", "--no-cache", "https://example.com" };
++    const proc_args: std.process.Args = .{ .vector = &argv };
++    const config = try parseArgs(arena.allocator(), proc_args);
++    try std.testing.expect(config.mode.fetch.json);
++    try std.testing.expect(config.mode.fetch.no_cache);
++    try std.testing.expectEqualStrings("https://example.com", config.mode.fetch.url.items[0]);
++}
++
+ test "Config: validateUserAgent" {
+     try validateUserAgent("Lightpanda/1.0");
+     try std.testing.expectError(error.Reserved, validateUserAgent("mozilla/1.0"));
+@@ -1849,8 +1899,10 @@ fn accumulateValidator(allocator: Allocator, args: *std.process.Args.Iterator, f
  
  fn userAgentValidator(allocator: Allocator, args: *std.process.Args.Iterator, ua: *?[]const u8) !void {
      const str = args.next() orelse return error.MissingArgument;
@@ -373,6 +392,44 @@ index 5c0bc2bc801ec053e38bce07b8c63fd5c0a5f03d..fc879e1f3c051b2efc19e024b6d31339
          try conn.addHeader(allocator, hdr.name, hdr.value);
      }
      if (protocols.len > 0) {
+diff --git a/src/cli.zig b/src/cli.zig
+index 2a4adbecdc42f0abd32620d723e08c452ec3a939..3fd0b33cd3591130f72e9d046b2fc758ade95c8a 100644
+--- a/src/cli.zig
++++ b/src/cli.zig
+@@ -546,21 +546,6 @@ pub fn Builder(comptime commands: anytype) type {
+                 return .fetch;
+             }
+ 
+-            // Fetch heuristics.
+-            inline for (.{
+-                "--dump",
+-                "--strip-mode",
+-                "--strip_mode",
+-                "--with-base",
+-                "--with_base",
+-                "--with-frames",
+-                "--with_frames",
+-            }) |heuristic| {
+-                if (std.mem.eql(u8, cmd_str, heuristic)) {
+-                    return .fetch;
+-                }
+-            }
+-
+             // Serve heuristics.
+             inline for (.{
+                 "--host",
+@@ -571,7 +556,10 @@ pub fn Builder(comptime commands: anytype) type {
+                 }
+             }
+ 
+-            return unknownCommand(cmd_str);
++            // snitchmd: any other flag before the url means fetch, so
++            // `snitchmd --json URL` works like `snitchmd URL --json`. The fetch
++            // parser still rejects a flag it does not know.
++            return .fetch;
+         }
+ 
+         /// Turns a snake_case string to kebab-case in comptime.
 diff --git a/src/help.zon b/src/help.zon
 index 1ba73157aac2fc060431a9587daa4c77b528e9f4..68616a4ee69da3b799ccb0e468241492717060d2 100644
 --- a/src/help.zon
