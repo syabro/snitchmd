@@ -76,27 +76,31 @@
       line-height: 1.4;
       color: var(--ink);
     }
+    .lead-sub {
+      display: block;
+      margin-top: 8px;
+    }
     .lead strong {
       font-weight: 800;
     }
 
     /* Install */
     .install {
-      margin-top: 48px;
+      margin-top: 24px;
     }
     .install-title {
       font-weight: 800;
       font-size: var(--size-title);
       letter-spacing: -0.02em;
       color: var(--ink);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .install-row {
       display: flex;
       align-items: center;
       justify-content: flex-start;
       flex-wrap: wrap;
-      gap: 14px 28px;
+      gap: 14px 24px;
     }
     .install-cmd {
       margin: 0;
@@ -166,7 +170,7 @@
 
     /* Flow (symmetric spacing on both sides of each arrow) */
     .flow {
-      margin-top: 72px;
+      margin-top: 44px;
       display: grid;
       grid-template-columns: max-content 64px minmax(0, 1fr) 64px max-content;
       grid-template-rows: auto auto;
@@ -343,8 +347,8 @@
     <header class="hero">
       <h1 class="wordmark">snitchmd</h1>
       <p class="lead">
-        Fetch clean Markdown for LLMs and AI agents, bypassing Cloudflare and JS protection.<br />
-        One <strong>~75 MB</strong> binary.
+        Fetch clean Markdown for LLMs and AI agents, bypassing Cloudflare and JS protection.
+        <span class="lead-sub">One <strong>~75 MB</strong> binary.</span>
       </p>
     </header>
 
