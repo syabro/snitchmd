@@ -448,7 +448,7 @@ index 0000000000000000000000000000000000000000..7bd5ed767e2a418d3a47d1ee94ca7861
 +</body>
 +</html>
 diff --git a/src/browser/tools.zig b/src/browser/tools.zig
-index dd817deb130782af5ad0ad85048276a52b98fcbd..4063c431e23b88648536c3b97297e225e51a4371 100644
+index dd817deb130782af5ad0ad85048276a52b98fcbd..5b82cf800db4c120de5f9144fa1e6792f3f6b961 100644
 --- a/src/browser/tools.zig
 +++ b/src/browser/tools.zig
 @@ -1083,6 +1083,18 @@ fn execMarkdown(arena: std.mem.Allocator, session: *lp.Session, registry: *NodeR
@@ -470,17 +470,19 @@ index dd817deb130782af5ad0ad85048276a52b98fcbd..4063c431e23b88648536c3b97297e225
      lp.markdown.dump(state, .{ .max_bytes = args.maxBytes }, &aw.writer, page) catch return ToolError.InternalError;
      return aw.written();
  }
-@@ -2801,6 +2813,30 @@ const PerformGotoOpts = struct {
+@@ -2801,6 +2813,36 @@ const PerformGotoOpts = struct {
      wait_until: lp.Config.WaitUntil = default_nav_wait,
  };
  
 +/// snitchmd: how long a navigation that landed on a bot challenge page waits
-+/// for the challenge's own JS to pass it, unless the call gives its own
-+/// timeout; `snitchmd URL` waits the same 30 s. A passed challenge navigates
-+/// again, which clears `_bot_challenge`.
++/// for the challenge's own JS to pass it when the call gives no timeout;
++/// `snitchmd URL` waits the same 30 s. A passed challenge navigates again,
++/// which clears `_bot_challenge`.
 +const bot_challenge_wait_ms: u32 = 30000;
 +
-+fn waitOutBotChallenge(runner: *lp.Session.Runner, page: lp.Session.PageHandle, timeout_ms: u32) !void {
++/// The wait result for the page that replaced the challenge, or null when the
++/// page is not a challenge. error.Timeout: the challenge did not pass.
++fn waitOutBotChallenge(runner: *lp.Session.Runner, page: lp.Session.PageHandle, timeout_ms: u32, until: lp.Config.WaitUntil) !?lp.Session.Runner.WaitResult {
 +    const Passed = struct {
 +        page: lp.Session.PageHandle,
 +        pub fn met(self: @This()) !bool {
@@ -488,35 +490,50 @@ index dd817deb130782af5ad0ad85048276a52b98fcbd..4063c431e23b88648536c3b97297e225
 +            return frame._bot_challenge == null and frame._parse_state != .pre;
 +        }
 +    };
++    const frame = page.frame() orelse return null;
++    if (frame._bot_challenge == null) return null;
 +    const passed: Passed = .{ .page = page };
-+    if (try passed.met()) return;
 +    const timer: std.Io.Timestamp = .now(lp.io, .boot);
 +    try runner.waitUntil(page.frame_id, timeout_ms, passed);
 +    // The page after the challenge loads like any navigation.
-+    const elapsed: u32 = @intCast(timer.untilNow(lp.io, .boot).toMilliseconds());
-+    var conditions = [_]lp.Session.Runner.WaitCondition{.{ .frame_id = page.frame_id, .until = default_nav_wait }};
-+    _ = try runner.waitResult(timeout_ms -| elapsed, &conditions);
++    var conditions = [_]lp.Session.Runner.WaitCondition{.{ .frame_id = page.frame_id, .until = until }};
++    return try runner.waitResult(timeout_ms -| elapsedMs(timer), &conditions);
++}
++
++fn elapsedMs(timer: std.Io.Timestamp) u32 {
++    return @intCast(timer.untilNow(lp.io, .boot).toMilliseconds());
 +}
 +
  fn performGoto(session: *lp.Session, registry: *NodeRegistry, url: [:0]const u8, opts: PerformGotoOpts) ToolError!lp.Session.Runner.WaitResult {
      if (session.primaryPage()) |old_page| {
          registry.reset();
-@@ -2815,6 +2851,14 @@ fn performGoto(session: *lp.Session, registry: *NodeRegistry, url: [:0]const u8,
+@@ -2809,12 +2851,24 @@ fn performGoto(session: *lp.Session, registry: *NodeRegistry, url: [:0]const u8,
+     const page = try openPage(session, url);
+ 
+     var runner = session.runner(.{});
++    const timer: std.Io.Timestamp = .now(lp.io, .boot);
+     const condition = lp.Session.Runner.WaitCondition{ .frame_id = page.frame_id, .until = opts.wait_until };
+     var conditions = [_]lp.Session.Runner.WaitCondition{condition};
+-    const result = runner.waitResult(opts.timeout orelse default_nav_timeout_ms, &conditions) catch |err| {
++    var result = runner.waitResult(opts.timeout orelse default_nav_timeout_ms, &conditions) catch |err| {
          return if (err == error.Cancelled) ToolError.Cancelled else ToolError.NavigationFailed;
      };
  
-+    if (result == .completed) {
-+        waitOutBotChallenge(&runner, page, opts.timeout orelse bot_challenge_wait_ms) catch |err| switch (err) {
-+            error.Cancelled => return ToolError.Cancelled,
-+            error.Timeout => {},
-+            else => return ToolError.NavigationFailed,
-+        };
++    // An explicit timeout bounds the whole goto; without one the challenge
++    // gets its own 30 s.
++    const challenge_timeout_ms = if (opts.timeout) |t| t -| elapsedMs(timer) else bot_challenge_wait_ms;
++    if (waitOutBotChallenge(&runner, page, challenge_timeout_ms, opts.wait_until)) |after| {
++        if (after) |r| result = r;
++    } else |err| switch (err) {
++        error.Cancelled => return ToolError.Cancelled,
++        error.Timeout => {},
++        else => return ToolError.NavigationFailed,
 +    }
 +
      // re-fetch frame, navigate might have changed it.
      const frame = page.frame() orelse return ToolError.NavigationFailed;
      if (frame._last_navigate_error != null) return ToolError.NavigationFailed;
-@@ -3599,12 +3643,27 @@ test "tools: a bot challenge is named" {
+@@ -3599,12 +3653,27 @@ test "tools: a bot challenge is named" {
  
      const aa = testing.arena_allocator;
      const args = try std.json.parseFromSliceLeaky(std.json.Value, aa,
@@ -546,9 +563,18 @@ index dd817deb130782af5ad0ad85048276a52b98fcbd..4063c431e23b88648536c3b97297e225
      var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
      defer arena.deinit();
 diff --git a/src/browser/tools/definitions.zig b/src/browser/tools/definitions.zig
-index 66ee03c93f858a13ca163cd667681fb50ca4aee8..76ceeda6a120b6d8f4a22309b30f79e73c18e4cd 100644
+index 66ee03c93f858a13ca163cd667681fb50ca4aee8..86eda558a5cd93c31b9fe7bfb8d9c10455b12406 100644
 --- a/src/browser/tools/definitions.zig
 +++ b/src/browser/tools/definitions.zig
+@@ -56,7 +56,7 @@ pub const Definition = struct {
+ pub fn of(tool: Tool) Definition {
+     return switch (tool) {
+         .goto => .{
+-            .description = "Navigate the current page to a URL. Returns the HTTP status once `waitUntil` fires (default `load`), or a timeout notice; a 4xx or 5xx means the page you got is an error page, not the content — check it before reading on; content rendered by post-load JavaScript may not be there yet (see `waitForState`). The page stays loaded for later reads and actions. To navigate and read in one call, pass `url` to `markdown`, `tree` or `html` instead; use `goto` when the next step is an action or `extract`.",
++            .description = "Navigate the current page to a URL. Returns the HTTP status once `waitUntil` fires (default `load`), or a timeout notice; a 4xx or 5xx means the page you got is an error page, not the content — check it before reading on; content rendered by post-load JavaScript may not be there yet (see `waitForState`). A bot challenge page (Cloudflare, AWS WAF, Vercel) gets up to 30 s more to pass itself, or the rest of `timeout` when it is given. The page stays loaded for later reads and actions. To navigate and read in one call, pass `url` to `markdown`, `tree` or `html` instead; use `goto` when the next step is an action or `extract`.",
+             .summary = "Open a URL and keep the page in memory",
+             .input_schema = minify(
+                 \\{
 @@ -87,7 +87,7 @@ pub fn of(tool: Tool) Definition {
              ),
          },
