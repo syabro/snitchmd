@@ -1,17 +1,12 @@
 # Test sites
 
-Pages to check snitchmd against, by what they test. "Last result" is the
-2026-11-22 run of the prototype that became v2 (Lightpanda + Safari network
-fingerprint + Safari User-Agent and JS identity), unless noted. v2 itself has not
-been run over these lists yet.
+Pages to test snitchmd against, grouped by what they test. Terms (v1, prototype, v2) are defined in [design.md](design.md#terms). "Last result" is the prototype run of 2026-11-22, unless the cell says otherwise. v2 has not been run over the full lists. The only v2 results are two spot checks on 2026-11-24 (WSJ, Quora), marked in the table.
 
-Run with `--no-cache` and the defaults (`--wait-until done`, 30 s). One IP gets
-flagged after ~25 requests a day to the same DataDome site; spread runs out.
+Run with `--no-cache` and the defaults (`--wait-until done`, 30 s). An IP gets flagged after ~25 requests a day to the same DataDome site, so spread the runs out.
 
 ## 1. Network fingerprint
 
-Must match curl-impersonate's Safari 27 profile
-(`3rdparty/curl-impersonate/tests/signatures/safari270.yaml`).
+Must match curl-impersonate's Safari 27 profile (`3rdparty/curl-impersonate/tests/signatures/safari270.yaml`).
 
 | URL                               | Check                                     | Expected                                                                   |
 | --------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------- |
@@ -23,8 +18,7 @@ Command: `snitchmd https://tls.peet.ws/api/all --no-cache --dump html`.
 
 ## 2. Bot detectors
 
-From CloakBrowser's `tests/test_stealth.py`. snitchmd v1 (CloakBrowser 0.3.31)
-and plain Lightpanda 1.0.5 results are from 2026-11-22; v2 was not run.
+From CloakBrowser's `tests/test_stealth.py`. The v1 (CloakBrowser 0.3.31) and plain Lightpanda 1.0.5 results are from 2026-11-22. v2 was not run.
 
 | URL                                                                | What it shows                                       | v1                                                  | Lightpanda 1.0.5                              |
 | ------------------------------------------------------------------ | --------------------------------------------------- | --------------------------------------------------- | --------------------------------------------- |
@@ -35,77 +29,74 @@ and plain Lightpanda 1.0.5 results are from 2026-11-22; v2 was not run.
 | https://demo.fingerprint.com/web-scraping                          | FingerprintJS; needs a click on Search (`--script`) | not checked                                         | "bad request"                                 |
 | https://recaptcha-demo.appspot.com/recaptcha-v3-request-scores.php | reCAPTCHA v3 score                                  | 0.9                                                 | 0.9                                           |
 
-reCAPTCHA v3 demo is useless: the key is over its free quota and returns a static
-0.9 to everyone. Detector checks need `--load-resources iframe --load-resources
-worker --with-frames` for the verdict to render.
+The reCAPTCHA v3 demo is not useful: its key is over the free quota and returns a static 0.9 to everyone. Detector pages render their verdict only with `--load-resources iframe --load-resources worker --with-frames`.
 
 ## 3. Real sites
 
-The 35 sites from can1357's table (https://x.com/can1357/status/2090837707069014224,
-names only; URLs chosen by us). ✓ content, ◐ shell without data, × block.
+The 35 sites come from can1357's table (https://x.com/can1357/status/2090837707069014224, names only; we chose the URLs). ✓ content, ◐ page loads without the content, × blocked.
 
-| Site            | URL                                              | Protection                                    | Last result                                           |
-| --------------- | ------------------------------------------------ | --------------------------------------------- | ----------------------------------------------------- |
-| NYTimes         | https://www.nytimes.com/                         | DataDome                                      | not run (IP flagged)                                  |
-| New Yorker      | https://www.newyorker.com/                       |                                               | ✓                                                     |
-| The Atlantic    | https://www.theatlantic.com/                     | Cloudflare                                    | ✓                                                     |
-| Bloomberg       | https://www.bloomberg.com/                       | PerimeterX, random blocks                     | ✓ (random)                                            |
-| Washington Post | https://www.washingtonpost.com/                  |                                               | ✓                                                     |
-| WSJ             | https://www.wsj.com/                             | DataDome                                      | × 401 (IP flagged); v2 on 2026-11-24 ✓                |
-| FT              | https://www.ft.com/                              | Cloudflare, network fingerprint               | ✓                                                     |
-| Medium          | https://medium.com/                              |                                               | ✓ (landing)                                           |
-| Wired           | https://www.wired.com/                           |                                               | ✓                                                     |
-| The Athletic    | https://www.nytimes.com/athletic/                | DataDome                                      | not run (IP flagged)                                  |
-| Wikipedia       | https://en.wikipedia.org/wiki/Web_scraping       |                                               | ✓                                                     |
-| X — tweet       | https://x.com/can1357/status/2090837707069014224 |                                               | ✓                                                     |
-| X — profile     | https://x.com/can1357                            |                                               | ✓                                                     |
-| Facebook        | https://www.facebook.com/facebook                | login wall                                    | ◐                                                     |
-| Threads         | https://www.threads.com/@zuck                    |                                               | ✓ (less text than with UA `Lightpanda/1.0`)           |
-| Instagram       | https://www.instagram.com/instagram/             |                                               | ✓                                                     |
-| LinkedIn        | https://www.linkedin.com/company/microsoft/      | Cloudflare                                    | ✓                                                     |
-| Pinterest       | https://www.pinterest.com/pinterest/             |                                               | ✓                                                     |
-| IMDb            | https://www.imdb.com/title/tt0111161/            | AWS WAF JS challenge                          | ✓                                                     |
-| Quora           | https://www.quora.com/                           | Cloudflare                                    | ✓ landing; v2 on 2026-11-24: login wall, quality 0.15 |
-| StackOverflow   | https://stackoverflow.com/questions/11227809     | Cloudflare JS challenge                       | ✓                                                     |
-| Reddit          | https://www.reddit.com/r/programming/            | JS challenge or captcha by HTTP/2 fingerprint | ✓                                                     |
-| TikTok          | https://www.tiktok.com/@tiktok                   |                                               | ◐ "Please wait..."                                    |
-| YouTube         | https://www.youtube.com/watch?v=dQw4w9WgXcQ      |                                               | ✓                                                     |
-| Twitch          | https://www.twitch.tv/twitch                     |                                               | ✓                                                     |
-| GitHub          | https://github.com/lightpanda-io/browser         |                                               | ✓                                                     |
-| HN              | https://news.ycombinator.com/                    | rate limit by IP                              | ✓                                                     |
-| Substack        | https://on.substack.com/                         |                                               | ✓ (needs `style-index.js`)                            |
-| Tumblr          | https://staff.tumblr.com/                        | own JS challenge                              | ✓                                                     |
-| Bluesky         | https://bsky.app/profile/bsky.app                |                                               | ✓                                                     |
-| Mastodon        | https://mastodon.social/@Mastodon                |                                               | ✓                                                     |
-| Goodreads       | https://www.goodreads.com/book/show/5470.1984    |                                               | ✓                                                     |
-| SoundCloud      | https://soundcloud.com/soundcloud                |                                               | ✓                                                     |
-| Flickr          | https://www.flickr.com/explore                   |                                               | ✓ (v2 once panicked on an emoji)                      |
-| Imgur           | https://imgur.com/                               |                                               | ✓                                                     |
+| Site            | URL                                              | Protection                                    | Last result                                                  |
+| --------------- | ------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------ |
+| NYTimes         | https://www.nytimes.com/                         | DataDome                                      | not run (IP flagged)                                         |
+| New Yorker      | https://www.newyorker.com/                       |                                               | ✓                                                            |
+| The Atlantic    | https://www.theatlantic.com/                     | Cloudflare                                    | ✓                                                            |
+| Bloomberg       | https://www.bloomberg.com/                       | PerimeterX, random blocks                     | ✓ (random)                                                   |
+| Washington Post | https://www.washingtonpost.com/                  |                                               | ✓                                                            |
+| WSJ             | https://www.wsj.com/                             | DataDome                                      | × 401 (IP flagged); v2 on 2026-11-24 ✓                       |
+| FT              | https://www.ft.com/                              | Cloudflare, network fingerprint               | ✓                                                            |
+| Medium          | https://medium.com/                              |                                               | ✓ (landing)                                                  |
+| Wired           | https://www.wired.com/                           |                                               | ✓                                                            |
+| The Athletic    | https://www.nytimes.com/athletic/                | DataDome                                      | not run (IP flagged)                                         |
+| Wikipedia       | https://en.wikipedia.org/wiki/Web_scraping       |                                               | ✓                                                            |
+| X — tweet       | https://x.com/can1357/status/2090837707069014224 |                                               | ✓                                                            |
+| X — profile     | https://x.com/can1357                            |                                               | ✓                                                            |
+| Facebook        | https://www.facebook.com/facebook                | login wall                                    | ◐                                                            |
+| Threads         | https://www.threads.com/@zuck                    |                                               | ✓ (worse: less text than with UA `Lightpanda/1.0`; cause not investigated) |
+| Instagram       | https://www.instagram.com/instagram/             |                                               | ✓                                                            |
+| LinkedIn        | https://www.linkedin.com/company/microsoft/      | Cloudflare                                    | ✓                                                            |
+| Pinterest       | https://www.pinterest.com/pinterest/             |                                               | ✓                                                            |
+| IMDb            | https://www.imdb.com/title/tt0111161/            | AWS WAF JS challenge                          | ✓                                                            |
+| Quora           | https://www.quora.com/                           | Cloudflare                                    | prototype: landing ✓; v2 on 2026-11-24: login wall, quality 0.15 (not cached) |
+| StackOverflow   | https://stackoverflow.com/questions/11227809     | Cloudflare JS challenge                       | ✓                                                            |
+| Reddit          | https://www.reddit.com/r/programming/            | JS challenge or captcha by HTTP/2 fingerprint | ✓                                                            |
+| TikTok          | https://www.tiktok.com/@tiktok                   |                                               | ◐ "Please wait..."                                           |
+| YouTube         | https://www.youtube.com/watch?v=dQw4w9WgXcQ      |                                               | ✓                                                            |
+| Twitch          | https://www.twitch.tv/twitch                     |                                               | ✓                                                            |
+| GitHub          | https://github.com/lightpanda-io/browser         |                                               | ✓                                                            |
+| HN              | https://news.ycombinator.com/                    | rate limit by IP                              | ✓                                                            |
+| Substack        | https://on.substack.com/                         |                                               | ✓ (needs `style-index.js`)                                   |
+| Tumblr          | https://staff.tumblr.com/                        | own JS challenge                              | ✓                                                            |
+| Bluesky         | https://bsky.app/profile/bsky.app                |                                               | ✓                                                            |
+| Mastodon        | https://mastodon.social/@Mastodon                |                                               | ✓                                                            |
+| Goodreads       | https://www.goodreads.com/book/show/5470.1984    |                                               | ✓                                                            |
+| SoundCloud      | https://soundcloud.com/soundcloud                |                                               | ✓                                                            |
+| Flickr          | https://www.flickr.com/explore                   |                                               | ✓ (v2 once panicked on an emoji)                             |
+| Imgur           | https://imgur.com/                               |                                               | ✓                                                            |
 
-Prototype on 33 sites (NYTimes and The Athletic left out): 30 ✓ / 2 ◐ / 1 ×.
+Prototype on 33 sites, 2026-11-22 (NYTimes and The Athletic left out): 30 ✓ / 2 ◐ / 1 ×.
 
 ## 4. Extraction quality
 
-- **8 pages compared on 2026-11-22** — main text kept, navigation dropped, nothing cut off:
-  - https://en.wikipedia.org/wiki/Web_scraping
-  - https://stackoverflow.com/questions/11227809
-  - https://github.com/lightpanda-io/browser
-  - https://www.imdb.com/title/tt0111161/
-  - https://www.goodreads.com/book/show/5470.1984
-  - https://paulgraham.com/greatwork.html
-  - https://www.theatlantic.com/
-  - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
-- **https://en.wikipedia.org/wiki/Red_panda** — known: 11.8 MB of padded navigation tables.
-- **[scrapinghub/article-extraction-benchmark](https://github.com/scrapinghub/article-extraction-benchmark)** —
-  181 articles with ground truth; rs-trafilatura reports F1 0.966.
-- **[Web Content Extraction Benchmark](https://github.com/Murrough-Foley/web-content-extraction-benchmark)** —
-  1,497 pages of 7 page types; rs-trafilatura reports F1 0.859.
+Compared on 2026-11-22. Expected result for each of the eight pages below: main text kept, navigation dropped, nothing cut off.
 
-The two benchmarks are offline HTML with ground truth: they test rs-trafilatura,
-not fetching.
+- https://en.wikipedia.org/wiki/Web_scraping
+- https://stackoverflow.com/questions/11227809
+- https://github.com/lightpanda-io/browser
+- https://www.imdb.com/title/tt0111161/
+- https://www.goodreads.com/book/show/5470.1984
+- https://paulgraham.com/greatwork.html
+- https://www.theatlantic.com/
+- https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
+
+Other known cases:
+
+- https://en.wikipedia.org/wiki/Red_panda — known issue: 11.8 MB of padded navigation tables.
+- [scrapinghub/article-extraction-benchmark](https://github.com/scrapinghub/article-extraction-benchmark) — 181 articles with reference article text (ground truth); rs-trafilatura reports F1 0.966.
+- [Web Content Extraction Benchmark](https://github.com/Murrough-Foley/web-content-extraction-benchmark) — 1,497 pages of 7 page types; rs-trafilatura reports F1 0.859.
+
+Both benchmarks use offline HTML with reference text, so they test rs-trafilatura, not fetching.
 
 ## 5. Lightpanda engine
 
-- https://demo-browser.lightpanda.io/ — Lightpanda's own end-to-end target
-  (`.github/workflows/agent-regression.yml`).
+- https://demo-browser.lightpanda.io/ — a live page that Lightpanda's CI runs the full fetch against (`.github/workflows/agent-regression.yml`).
 - https://demo-browser.lightpanda.io/campfire-commerce/ — JS-rendered shop page.
