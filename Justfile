@@ -24,9 +24,9 @@ dev:
     cd {{lightpanda}} && make download-v8 && make build
     cp {{lightpanda}}/zig-out/bin/lightpanda dist/snitchmd
 
-# Run Lightpanda's tests in 3rdparty/lightpanda; F filters by test name.
-test F="":
-    cd {{lightpanda}} && make test F="{{F}}"
+# Run Lightpanda's tests in 3rdparty/lightpanda; an argument filters by test name.
+test filter="":
+    cd {{lightpanda}} && make test F="{{filter}}"
 
 # Tag VERSION and push it; GitHub Actions builds the binaries and publishes the release.
 release version:

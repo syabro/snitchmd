@@ -1,8 +1,18 @@
 diff --git a/build.zig b/build.zig
-index ed5135c26c4cc80728bbc6bcd5fd4dd4ec60f57b..40e14c3734048a57c861f1e4cd66261928b7420a 100644
+index ed5135c26c4cc80728bbc6bcd5fd4dd4ec60f57b..86a19e63aa87d222b86fc592dedb2865a22b6e92 100644
 --- a/build.zig
 +++ b/build.zig
-@@ -1052,6 +1052,7 @@ fn buildCurl(
+@@ -103,6 +103,9 @@ pub fn build(b: *Build) !void {
+     var opts = b.addOptions();
+     opts.addOption([]const u8, "version", version_string);
+     opts.addOption([]const u8, "version_encoded", version_encoded);
++    // snitchmd: its own release version, set by CI from the tag.
++    const snitchmd_version = b.option([]const u8, "snitchmd_version", "snitchmd release version (default: dev)") orelse "dev";
++    opts.addOption([]const u8, "snitchmd_version", snitchmd_version);
+     opts.addOption(?[]const u8, "snapshot_path", snapshot_path);
+     opts.addOption(bool, "wpt_extensions", wpt_extensions);
+ 
+@@ -1052,6 +1055,7 @@ fn buildCurl(
              "vtls/mbedtls.c",          "vtls/openssl.c",      "vtls/rustls.c",         "vtls/schannel.c",
              "vtls/schannel_verify.c",  "vtls/vtls.c",         "vtls/vtls_config.c",    "vtls/vtls_scache.c",
              "vtls/vtls_spack.c",       "vtls/wolfssl.c",      "vtls/x509asn1.c",       "ws.c",
@@ -34,7 +44,7 @@ index ec08091d2d4c4c990b792c5eb8c9e3fc9e7529fb..81b8b2168784abcdbea5e834a4f3a8d3
              .url = "https://sqlite.org/2026/sqlite-amalgamation-3530200.zip",
              .hash = "N-V-__8AALc_rgC04POe18O0LKFRm4ouQpLtL3riscEmWp-Q",
 diff --git a/src/Config.zig b/src/Config.zig
-index 7368bdc92bff69b76e61bd616a68504eac8c16cc..3dca6387b9ef54eb435977495fa09c146ee6f587 100644
+index 7368bdc92bff69b76e61bd616a68504eac8c16cc..2c47162540c8ab04db946729eedd39c3b5e2b0f1 100644
 --- a/src/Config.zig
 +++ b/src/Config.zig
 @@ -417,6 +417,18 @@ fn waitScriptFileValidator(allocator: Allocator, args: *std.process.Args.Iterato
@@ -112,7 +122,7 @@ index 7368bdc92bff69b76e61bd616a68504eac8c16cc..3dca6387b9ef54eb435977495fa09c14
  pub fn parseArgs(allocator: Allocator, proc_args: std.process.Args) !Config {
      const exec_name, var command = try Commands.parse(allocator, proc_args);
      const invoked = std.meta.activeTag(command);
-@@ -1393,6 +1424,20 @@ pub fn parseArgs(allocator: Allocator, proc_args: std.process.Args) !Config {
+@@ -1393,6 +1424,24 @@ pub fn parseArgs(allocator: Allocator, proc_args: std.process.Args) !Config {
          return error.MissingArgument;
      }
  
@@ -125,15 +135,19 @@ index 7368bdc92bff69b76e61bd616a68504eac8c16cc..3dca6387b9ef54eb435977495fa09c14
 +    if (command == .fetch) {
 +        command.fetch.dump = command.fetch.dump orelse .markdown;
 +        command.fetch.wait_until = command.fetch.wait_until orelse .done;
-+        if (command.fetch.user_agent_suffix == null) {
-+            command.fetch.user_agent = command.fetch.user_agent orelse safari_user_agent;
-+        }
++    }
++    // snitchmd: every browsing mode presents itself as Safari unless told otherwise.
++    switch (command) {
++        inline .serve, .fetch, .mcp, .agent => |*opts| if (opts.user_agent_suffix == null) {
++            opts.user_agent = opts.user_agent orelse safari_user_agent;
++        },
++        else => {},
 +    }
 +
      // Agent mode quiets page-driven `console.error` noise unless
      // verbosity=high. Depends on --verbosity/--task, so it can only be
      // resolved after the options are parsed; an explicit --log-level wins.
-@@ -1474,13 +1519,6 @@ test "Config: advertiseHost preserves concrete host when not a wildcard" {
+@@ -1474,13 +1523,6 @@ test "Config: advertiseHost preserves concrete host when not a wildcard" {
      try std.testing.expectEqualStrings("127.0.0.1", config.advertiseHost());
  }
  
@@ -147,7 +161,7 @@ index 7368bdc92bff69b76e61bd616a68504eac8c16cc..3dca6387b9ef54eb435977495fa09c14
  test "Config: parseArgs --http-version" {
      // parseArgs allocations live for the process; an arena stands in for main's.
      var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-@@ -1639,6 +1677,18 @@ test "Config: parseArgs tells a url from a misspelt command" {
+@@ -1639,6 +1681,18 @@ test "Config: parseArgs tells a url from a misspelt command" {
      }
  }
  
@@ -166,7 +180,7 @@ index 7368bdc92bff69b76e61bd616a68504eac8c16cc..3dca6387b9ef54eb435977495fa09c14
  test "Config: validateUserAgent" {
      try validateUserAgent("Lightpanda/1.0");
      try std.testing.expectError(error.Reserved, validateUserAgent("mozilla/1.0"));
-@@ -1849,8 +1899,10 @@ fn accumulateValidator(allocator: Allocator, args: *std.process.Args.Iterator, f
+@@ -1849,8 +1903,10 @@ fn accumulateValidator(allocator: Allocator, args: *std.process.Args.Iterator, f
  
  fn userAgentValidator(allocator: Allocator, args: *std.process.Args.Iterator, ua: *?[]const u8) !void {
      const str = args.next() orelse return error.MissingArgument;
@@ -179,23 +193,175 @@ index 7368bdc92bff69b76e61bd616a68504eac8c16cc..3dca6387b9ef54eb435977495fa09c14
          return error.InvalidArgument;
      };
  
+diff --git a/src/Updater.zig b/src/Updater.zig
+index 2c753a6a0cff219fe12b684bf2e88b0b98c3f071..e0317c42bdfce1ad798a23aa40d68ba267f4ab84 100644
+--- a/src/Updater.zig
++++ b/src/Updater.zig
+@@ -25,8 +25,13 @@ const libcurl = @import("sys/libcurl.zig");
+ 
+ const Allocator = std.mem.Allocator;
+ 
+-/// Sends running Lightpanda version to remote to get update information.
+-/// Outputs directly to given `Writer`.
++// snitchmd: `version --check` compares the build with the latest snitchmd
++// release on GitHub instead of asking Lightpanda's server.
++
++const latest_url = "https://api.github.com/repos/syabro/snitchmd/releases/latest";
++
++/// Prints whether a newer snitchmd release is out. Returns error.CheckFailed
++/// when GitHub answers with anything but 200 (403 is its rate limit).
+ pub fn inform(allocator: Allocator, config: *const lp.Config, writer: *std.Io.Writer) !void {
+     const certificates = try Certificates.init(allocator, config);
+     defer certificates.deinit();
+@@ -39,26 +44,60 @@ pub fn inform(allocator: Allocator, config: *const lp.Config, writer: *std.Io.Wr
+     var conn = try http.Connection.init(certificates, config, null);
+     defer conn.deinit();
+ 
+-    try conn.setURL("https://telemetry.lightpanda.io/v/" ++ lp.build_config.version);
++    try conn.setURL(latest_url);
+     try conn.setGetMode();
+     try conn.setFollowLocation(true);
++    // The GitHub API refuses requests without a User-Agent.
++    try conn.addHeader(allocator, "User-Agent", "snitchmd/" ++ lp.build_config.snitchmd_version);
++    try conn.addHeader(allocator, "Accept", "application/vnd.github+json");
++    try conn.commitHeaders();
+ 
+-    // Wraps everything needed to receive bytes.
+-
+-    // Set receiver context.
+-    var ctx = ReceiverContext{ .writer = writer };
++    var body: std.Io.Writer.Allocating = .init(allocator);
++    defer body.deinit();
++    var ctx = ReceiverContext{ .writer = &body.writer };
+     try libcurl.curl_easy_setopt(conn._easy, .write_data, &ctx);
+     try libcurl.curl_easy_setopt(conn._easy, .write_function, ReceiverContext.drain);
+ 
+-    // Make a request.
+-    const status_int = conn.perform() catch |err| {
++    const status = conn.perform() catch |err| {
+         ctx.err catch |ctx_err| return ctx_err;
+         return err;
+     };
+-    _ = status_int;
++    if (status != 200) {
++        try writer.print("version check failed: GitHub answered {d}\n", .{status});
++        try writer.flush();
++        return error.CheckFailed;
++    }
++
++    const Release = struct { tag_name: []const u8, html_url: []const u8 };
++    const release = try std.json.parseFromSlice(Release, allocator, body.written(), .{ .ignore_unknown_fields = true });
++    defer release.deinit();
++
++    const running = lp.build_config.snitchmd_version;
++    const latest = std.mem.trimStart(u8, release.value.tag_name, "v");
++    try writer.print("{f}\n", .{describe(running, latest, release.value.html_url)});
+     return writer.flush();
+ }
+ 
++fn describe(running: []const u8, latest: []const u8, url: []const u8) Status {
++    const run_v = std.SemanticVersion.parse(running) catch return .{ .unknown = .{ latest, url } };
++    const latest_v = std.SemanticVersion.parse(latest) catch return .{ .unknown = .{ latest, url } };
++    if (run_v.order(latest_v) == .lt) return .{ .outdated = .{ running, latest, url } };
++    return .{ .current = running };
++}
++
++const Status = union(enum) {
++    current: []const u8,
++    outdated: struct { []const u8, []const u8, []const u8 },
++    unknown: struct { []const u8, []const u8 },
++
++    pub fn format(self: Status, w: *std.Io.Writer) std.Io.Writer.Error!void {
++        switch (self) {
++            .current => |v| try w.print("snitchmd {s} is up to date", .{v}),
++            .outdated => |v| try w.print("snitchmd {s} is running, {s} is available: {s}", .{ v[0], v[1], v[2] }),
++            .unknown => |v| try w.print("snitchmd version unknown, latest release is {s}: {s}", .{ v[0], v[1] }),
++        }
++    }
++};
+ const ReceiverContext = struct {
+     writer: *std.Io.Writer,
+     err: std.Io.Writer.Error!void = {},
+@@ -77,3 +116,12 @@ const ReceiverContext = struct {
+         return buf_len;
+     }
+ };
++
++test "Updater: describe compares versions" {
++    var buf: [256]u8 = undefined;
++    const url = "https://github.com/syabro/snitchmd/releases/tag/v2.1.0";
++    try std.testing.expectEqualStrings("snitchmd 2.1.0 is up to date", try std.fmt.bufPrint(&buf, "{f}", .{describe("2.1.0", "2.1.0", url)}));
++    try std.testing.expectEqualStrings("snitchmd 2.2.0 is up to date", try std.fmt.bufPrint(&buf, "{f}", .{describe("2.2.0", "2.1.0", url)}));
++    try std.testing.expectEqualStrings("snitchmd 2.0.1 is running, 2.1.0 is available: " ++ url, try std.fmt.bufPrint(&buf, "{f}", .{describe("2.0.1", "2.1.0", url)}));
++    try std.testing.expectEqualStrings("snitchmd version unknown, latest release is 2.1.0: " ++ url, try std.fmt.bufPrint(&buf, "{f}", .{describe("dev", "2.1.0", url)}));
++}
 diff --git a/src/browser/Session.zig b/src/browser/Session.zig
-index e6e927035815d3a9e02f2f56fcc6dec0985ddbe9..eaf2e87fc6c5339dc17c7851c2425c6fe744ed91 100644
+index e6e927035815d3a9e02f2f56fcc6dec0985ddbe9..64c0a5da746ba14014c4c7c9b5e96bbf4f176528 100644
 --- a/src/browser/Session.zig
 +++ b/src/browser/Session.zig
-@@ -49,6 +49,12 @@ const ArenaPool = App.ArenaPool;
+@@ -49,6 +49,20 @@ const ArenaPool = App.ArenaPool;
  
  const Session = @This();
  
-+/// snitchmd: injected by `fetch` before user scripts.
-+pub const builtin_inject_scripts = [_][]const u8{
++/// snitchmd: run before the user's inject scripts whenever the User-Agent is a
++/// browser's ("Mozilla/..."), in every mode. Lightpanda's own User-Agent (and the
++/// test runner's) keeps them off.
++const builtin_inject_scripts = [_][]const u8{
 +    @embedFile("snitchmd/safari.js"),
 +    @embedFile("snitchmd/style-index.js"),
 +};
 +
++pub fn builtinInjectScripts(self: *const Session) []const []const u8 {
++    const user_agent = self.browser.http_client.getUserAgent();
++    if (std.ascii.findIgnoreCase(user_agent, "mozilla") == null) return &.{};
++    return &builtin_inject_scripts;
++}
++
  browser: *Browser,
  arena: *lp.Arena,
  // Session history, one per top-level browsing context, keyed by its root
+diff --git a/src/browser/frame/node_factory.zig b/src/browser/frame/node_factory.zig
+index d62c5884c67afde3a70418cd5e4a1e8d1c96b1a9..283e0faeef59106ae32e2be395e45fc921bdce38 100644
+--- a/src/browser/frame/node_factory.zig
++++ b/src/browser/frame/node_factory.zig
+@@ -428,23 +428,27 @@ pub fn createElementNS(document: *const Node.Document, namespace: Element.Namesp
+                     asUint("head") => {
+                         // Inject user-provided scripts.
+                         if (document._frame) |realm| {
+-                            const inject_scripts = realm._session.inject_scripts;
+-                            const should_inject_scripts = from_parser and realm._parse_mode == .document and inject_scripts.len > 0;
++                            // snitchmd: built-in scripts first, then the user's.
++                            const script_lists = [_][]const []const u8{ realm._session.builtinInjectScripts(), realm._session.inject_scripts };
++                            const should_inject_scripts = from_parser and realm._parse_mode == .document and
++                                script_lists[0].len + script_lists[1].len > 0;
+ 
+                             if (should_inject_scripts) {
+                                 var ls: JS.Local.Scope = undefined;
+                                 realm.js.localScope(&ls);
+                                 defer ls.deinit();
+ 
+-                                for (inject_scripts) |inject_script| {
+-                                    var try_catch: JS.TryCatch = undefined;
+-                                    try_catch.init(&ls.local);
+-                                    defer try_catch.deinit();
++                                for (script_lists) |inject_scripts| {
++                                    for (inject_scripts) |inject_script| {
++                                        var try_catch: JS.TryCatch = undefined;
++                                        try_catch.init(&ls.local);
++                                        defer try_catch.deinit();
+ 
+-                                    ls.local.eval(inject_script, "inject_script") catch |err| {
+-                                        const caught = try_catch.caughtOrError(realm.local_arena, err);
+-                                        log.err(.app, "inject script error", .{ .err = caught });
+-                                    };
++                                        ls.local.eval(inject_script, "inject_script") catch |err| {
++                                            const caught = try_catch.caughtOrError(realm.local_arena, err);
++                                            log.err(.app, "inject script error", .{ .err = caught });
++                                        };
++                                    }
+                                 }
+                             }
+                         }
 diff --git a/src/browser/markdown.zig b/src/browser/markdown.zig
 index b52540c6a755fc0f01a2b976c95a10412eadfe32..1b78437bd79d6fa08d1203461001b0171becdf6f 100644
 --- a/src/browser/markdown.zig
@@ -248,6 +414,75 @@ index 0000000000000000000000000000000000000000..31a1539be9187ea313300165a4b43f20
 +    });
 +  }
 +})();
+diff --git a/src/browser/tests/snitchmd/article.html b/src/browser/tests/snitchmd/article.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..7beecee3eca4f21ee879ea5cf16635f6e16ad961
+--- /dev/null
++++ b/src/browser/tests/snitchmd/article.html
+@@ -0,0 +1,14 @@
++<!DOCTYPE html>
++<html>
++<head><title>Article</title></head>
++<body>
++  <nav><a href="/">Home</a> <a href="/about">NavAboutLink</a> <a href="/blog">Blog</a></nav>
++  <article>
++    <h1>The main story</h1>
++    <p>The first paragraph of the main story explains what happened and why it matters to the reader of this page.</p>
++    <p>The second paragraph adds detail: numbers, names and places, so that the extractor sees a real body of text here.</p>
++    <p>The third paragraph closes the story with a conclusion that is long enough to count as main content.</p>
++  </article>
++  <footer>FooterCopyright 2026</footer>
++</body>
++</html>
+diff --git a/src/browser/tests/snitchmd/login.html b/src/browser/tests/snitchmd/login.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..7bd5ed767e2a418d3a47d1ee94ca7861b9f32d46
+--- /dev/null
++++ b/src/browser/tests/snitchmd/login.html
+@@ -0,0 +1,7 @@
++<!DOCTYPE html>
++<html>
++<head><title>Sign in</title></head>
++<body>
++  <form><input name="user"><input name="pass" type="password"><button>SignInButton</button></form>
++</body>
++</html>
+diff --git a/src/browser/tools.zig b/src/browser/tools.zig
+index dd817deb130782af5ad0ad85048276a52b98fcbd..8f5e44571df9ce01c5d9a5223349ef5eaff91f76 100644
+--- a/src/browser/tools.zig
++++ b/src/browser/tools.zig
+@@ -1083,6 +1083,18 @@ fn execMarkdown(arena: std.mem.Allocator, session: *lp.Session, registry: *NodeR
+     const state = lp.RenderTree.resolve(arena, node, args.strip, page) catch return ToolError.OutOfMemory;
+ 
+     var aw: std.Io.Writer.Allocating = .init(arena);
++    // snitchmd: the whole page gives its main content (rs-trafilatura); a
++    // subtree, or a page without main content (forms, search, login), is
++    // converted as is.
++    if (args.selector == null and args.backendNodeId == null) {
++        if (lp.trafilatura.render(arena, state, .{ .max_bytes = args.maxBytes }, .{}, &aw.writer, page)) {
++            return aw.written();
++        } else |err| switch (err) {
++            error.ExtractionEmpty => {},
++            error.OutOfMemory => return ToolError.OutOfMemory,
++            else => return ToolError.InternalError,
++        }
++    }
+     lp.markdown.dump(state, .{ .max_bytes = args.maxBytes }, &aw.writer, page) catch return ToolError.InternalError;
+     return aw.written();
+ }
+diff --git a/src/browser/tools/definitions.zig b/src/browser/tools/definitions.zig
+index 66ee03c93f858a13ca163cd667681fb50ca4aee8..76ceeda6a120b6d8f4a22309b30f79e73c18e4cd 100644
+--- a/src/browser/tools/definitions.zig
++++ b/src/browser/tools/definitions.zig
+@@ -87,7 +87,7 @@ pub fn of(tool: Tool) Definition {
+             ),
+         },
+         .markdown => .{
+-            .description = "Render the page (or a subtree) as markdown. Scope with `selector` or `backendNodeId` to read just the relevant region — full-page markdown is the last resort. Use `maxBytes` to cap long pages.",
++            .description = "Render the page's main content as markdown, without navigation, footers and ads; a page with no main content (forms, search, login) is rendered whole. Scope with `selector` or `backendNodeId` to render just that subtree as is. Use `maxBytes` to cap long pages.",
+             .summary = "Render the page or a subtree as markdown",
+             .input_schema = minify(
+                 \\{
 diff --git a/src/browser/trafilatura.zig b/src/browser/trafilatura.zig
 new file mode 100644
 index 0000000000000000000000000000000000000000..e1fc1b3c929ba8060466f348521be533124d4a80
@@ -431,7 +666,7 @@ index 2a4adbecdc42f0abd32620d723e08c452ec3a939..3fd0b33cd3591130f72e9d046b2fc758
  
          /// Turns a snake_case string to kebab-case in comptime.
 diff --git a/src/help.zon b/src/help.zon
-index 1ba73157aac2fc060431a9587daa4c77b528e9f4..68616a4ee69da3b799ccb0e468241492717060d2 100644
+index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566f3864059 100644
 --- a/src/help.zon
 +++ b/src/help.zon
 @@ -101,16 +101,22 @@
@@ -533,7 +768,19 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..68616a4ee69da3b799ccb0e468241492
      \\  --with-base
      \\          Add a <base> tag in dump.
      \\          Defaults to false.
-@@ -629,7 +658,7 @@
+@@ -437,9 +466,8 @@
+     \\
+     \\options:
+     \\  --check
+-    \\          Checks whether a newer release of {0s} is available. When one is
+-    \\          found, prints the running version, the latest release, and how to
+-    \\          update.
++    \\          Checks GitHub for a newer snitchmd release and prints the running
++    \\          version, the latest release, and its URL.
+     ,
+     .completion =
+     \\usage: {0s} completion <bash | fish | zsh>
+@@ -629,7 +657,7 @@
      \\          Allowed values: "pretty", "logfmt".
      \\  --log-level <LEVEL>
      \\          The log level.
@@ -542,7 +789,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..68616a4ee69da3b799ccb0e468241492
      \\          Allowed values: "debug", "info", "warn", "error", "fatal".
      \\  --obey-robots
      \\          Fetches and obeys robots.txt of the target page.
-@@ -649,9 +678,9 @@
+@@ -649,9 +677,9 @@
      \\          Time zone used by Date and Intl, e.g. Europe/Paris or UTC.
      \\          Defaults to the host time zone.
      \\  --user-agent <STRING>
@@ -551,12 +798,12 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..68616a4ee69da3b799ccb0e468241492
 -    \\          still sends Sec-Ch-Ua. Incompatible with --user-agent-suffix.
 +    \\          Override the User-Agent header entirely. The browser omits
 +    \\          Sec-Ch-Ua headers when the value contains "Mozilla".
-+    \\          Incompatible with --user-agent-suffix. fetch defaults to Safari 27.0.
++    \\          Incompatible with --user-agent-suffix. Defaults to Safari 27.0.
      \\  --user-agent-suffix <STRING>
      \\          Suffix appended to the Lightpanda/X.Y User-Agent.
      \\  --v8-flags-unsafe <FLAGS>
 diff --git a/src/lightpanda.zig b/src/lightpanda.zig
-index 5dfe5aa7084c74884fda8263fb6d724e188fad82..9bf21d46af8b88197fc6fd831074a7c79e0e5267 100644
+index 5dfe5aa7084c74884fda8263fb6d724e188fad82..ae02ac0c9bd51d6f98ed653fd64aeeab94c2b67f 100644
 --- a/src/lightpanda.zig
 +++ b/src/lightpanda.zig
 @@ -66,6 +66,7 @@ pub const actions = @import("browser/actions.zig");
@@ -594,15 +841,6 @@ index 5dfe5aa7084c74884fda8263fb6d724e188fad82..9bf21d46af8b88197fc6fd831074a7c7
  }
  
  const markdown_accept = "Accept: text/markdown,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";
-@@ -243,7 +248,7 @@ pub fn fetch(app: *App, browser: *Browser, urls: []const [:0]const u8, opts: Fet
-     }
- 
-     // Stash scripts user want to inject.
--    session.inject_scripts = opts.inject_script.items;
-+    session.inject_scripts = try std.mem.concat(session.arena.allocator(), []const u8, &.{ &Session.builtin_inject_scripts, opts.inject_script.items });
- 
-     // One page per url. `PageHandle.frame()` always re-resolves the live frame,
-     // so the handles stay valid across navigate / wait. The Runner's wait paths
 @@ -340,6 +345,21 @@ pub fn fetch(app: *App, browser: *Browser, urls: []const [:0]const u8, opts: Fet
          }
      }
@@ -669,7 +907,7 @@ index 5dfe5aa7084c74884fda8263fb6d724e188fad82..9bf21d46af8b88197fc6fd831074a7c7
      // Injected scripts run against the DOM too.
      var scripts: std.ArrayList([]const u8) = .empty;
 diff --git a/src/main.zig b/src/main.zig
-index 68a3ba101ec9cc7d82523636dce6dd05ef9cd8da..9f9417dcdab5bc7375b9dec3ddd800d9668e9b9b 100644
+index 68a3ba101ec9cc7d82523636dce6dd05ef9cd8da..4a0f249795b75742bfa9bfb1bb7fe0aefde93e99 100644
 --- a/src/main.zig
 +++ b/src/main.zig
 @@ -24,6 +24,7 @@ const log = lp.log;
@@ -680,6 +918,15 @@ index 68a3ba101ec9cc7d82523636dce6dd05ef9cd8da..9f9417dcdab5bc7375b9dec3ddd800d9
  pub const panic = lp.crash_handler.panic;
  
  pub const std_options: std.Options = .{
+@@ -83,7 +84,7 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
+                 try lp.checkVersion(allocator, &args);
+             } else {
+                 var stdout = std.Io.File.stdout().writerStreaming(lp.io, &.{});
+-                try stdout.interface.print("{s}\n", .{lp.build_config.version});
++                try stdout.interface.print("snitchmd {s} (Lightpanda {s})\n", .{ lp.build_config.snitchmd_version, lp.build_config.version });
+             }
+             return std.process.cleanExit(lp.io);
+         },
 @@ -193,8 +194,8 @@ fn run(allocator: Allocator, main_arena: Allocator, proc_args: std.process.Args)
                  log.fatal(.app, "--dump-max-bytes needs --dump", .{});
                  return error.InvalidArgument;
@@ -747,6 +994,95 @@ index 68a3ba101ec9cc7d82523636dce6dd05ef9cd8da..9f9417dcdab5bc7375b9dec3ddd800d9
          },
          .mcp => |opts| {
              log.info(.mcp, "starting server", .{});
+diff --git a/src/mcp/Server.zig b/src/mcp/Server.zig
+index 8ecbde1dded3acf7539b075005034fb90260b5fa..8ec7d8874e9bd87a36fa5bb01db633d888777705 100644
+--- a/src/mcp/Server.zig
++++ b/src/mcp/Server.zig
+@@ -225,7 +225,7 @@ pub fn handleInitialize(self: *Self, req: protocol.Request) !void {
+             .resources = .{},
+             .tools = .{},
+         },
+-        .serverInfo = .{ .name = "lightpanda", .version = "0.1.0" },
++        .serverInfo = .{ .name = "snitchmd", .version = lp.build_config.snitchmd_version },
+         .instructions = lp.tools.driver_guidance,
+     });
+ }
+diff --git a/src/mcp/resources.zig b/src/mcp/resources.zig
+index 67046bf029b33410e63bec923612277c3fb6a653..1a619d23b3629e2b5a1199035947ecdaa92b0527 100644
+--- a/src/mcp/resources.zig
++++ b/src/mcp/resources.zig
+@@ -57,9 +57,19 @@ const ResourceStreamingResult = struct {
+                     log.err(.mcp, "html dump failed", .{ .err = err });
+                     return error.WriteFailed;
+                 },
+-                .markdown => lp.markdown.dump(.{ .root = self.frame.document.asNode() }, .{}, &escaped.writer, self.frame) catch |err| {
+-                    log.err(.mcp, "markdown dump failed", .{ .err = err });
+-                    return error.WriteFailed;
++                // snitchmd: main content, or the whole page when there is none.
++                .markdown => {
++                    const state: lp.RenderTree.State = .{ .root = self.frame.document.asNode() };
++                    lp.trafilatura.render(std.heap.smp_allocator, state, .{}, .{}, &escaped.writer, self.frame) catch |err| switch (err) {
++                        error.ExtractionEmpty => lp.markdown.dump(state, .{}, &escaped.writer, self.frame) catch |dump_err| {
++                            log.err(.mcp, "markdown dump failed", .{ .err = dump_err });
++                            return error.WriteFailed;
++                        },
++                        else => {
++                            log.err(.mcp, "markdown dump failed", .{ .err = err });
++                            return error.WriteFailed;
++                        },
++                    };
+                 },
+             }
+             try jw.writer.writeByte('"');
+diff --git a/src/mcp/tools.zig b/src/mcp/tools.zig
+index c7812d33e661b7062402aa6cc5abfeb4678e13db..3b1a830676126d214016d37f1766b5bb761e5e91 100644
+--- a/src/mcp/tools.zig
++++ b/src/mcp/tools.zig
+@@ -2623,8 +2623,10 @@ test "MCP - markdown: full page, selector scope, maxBytes truncation" {
+         \\{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"markdown"}}
+     ;
+     try router.handleMessage(server, testing.arena_allocator, full);
+-    try testing.expect(std.mem.find(u8, out.written(), "Click Me") != null);
+-    try testing.expect(std.mem.find(u8, out.written(), "Hover Me") != null);
++    // snitchmd: the whole page gives its main content: the text paragraphs,
++    // without the buttons and widgets around them.
++    try testing.expect(std.mem.find(u8, out.written(), "Inner leaf") != null);
++    try testing.expect(std.mem.find(u8, out.written(), "Click Me") == null);
+ 
+     out.clearRetainingCapacity();
+     const scoped =
+@@ -2642,6 +2644,31 @@ test "MCP - markdown: full page, selector scope, maxBytes truncation" {
+     try testing.expect(std.mem.find(u8, out.written(), "[truncated]") != null);
+ }
+ 
++test "MCP - markdown: main content without navigation; a page without it is rendered whole" {
++    var out: std.Io.Writer.Allocating = .init(testing.arena_allocator);
++    {
++        const server = try testLoadPage("http://localhost:9582/src/browser/tests/snitchmd/article.html", &out.writer);
++        defer server.deinit();
++        const msg =
++            \\{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"markdown"}}
++        ;
++        try router.handleMessage(server, testing.arena_allocator, msg);
++        try testing.expect(std.mem.find(u8, out.written(), "The second paragraph") != null);
++        try testing.expect(std.mem.find(u8, out.written(), "NavAboutLink") == null);
++        try testing.expect(std.mem.find(u8, out.written(), "FooterCopyright") == null);
++    }
++    out.clearRetainingCapacity();
++    {
++        const server = try testLoadPage("http://localhost:9582/src/browser/tests/snitchmd/login.html", &out.writer);
++        defer server.deinit();
++        const msg =
++            \\{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"markdown"}}
++        ;
++        try router.handleMessage(server, testing.arena_allocator, msg);
++        try testing.expect(std.mem.find(u8, out.written(), "SignInButton") != null);
++    }
++}
++
+ test "MCP - html: full document, selector subtree, backendNodeId subtree" {
+     var out: std.Io.Writer.Allocating = .init(testing.arena_allocator);
+     const server = try testLoadPage("http://localhost:9582/src/browser/tests/mcp_press_form.html", &out.writer);
 diff --git a/src/network/HttpClient.zig b/src/network/HttpClient.zig
 index 1a1163a865d5d7569db9e2e5de1600820fb558ca..b69c08c1b9e9d14f8d3c41ac074c16e825dc4f51 100644
 --- a/src/network/HttpClient.zig

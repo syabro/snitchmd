@@ -42,7 +42,7 @@ To change Lightpanda:
 just prepare    # pinned sources + patches into 3rdparty/ (not in git)
 # edit 3rdparty/lightpanda
 just dev        # build it → dist/snitchmd
-just test       # Lightpanda's tests; just test F=name filters
+just test       # Lightpanda's tests; just test NAME filters
 just patch      # write the edits back to patches/lightpanda.patch, then commit that
 ```
 

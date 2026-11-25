@@ -49,8 +49,14 @@ jobs:
 
       - name: Build
         env:
-          ZIGFLAGS: ${{ matrix.zigflags }}
-        run: ./build.sh
+          CPU_FLAGS: ${{ matrix.zigflags }}
+        run: |
+          # A tag build carries the snitchmd version; a manual run stays "dev".
+          ZIGFLAGS="$CPU_FLAGS"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            ZIGFLAGS="$ZIGFLAGS -Dsnitchmd_version=${GITHUB_REF_NAME#v}"
+          fi
+          ZIGFLAGS="$ZIGFLAGS" ./build.sh
 
       - name: Strip
         run: strip -o dist/${{ matrix.asset }} dist/snitchmd
@@ -58,6 +64,9 @@ jobs:
       - name: Smoke test
         run: |
           dist/${{ matrix.asset }} version
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            dist/${{ matrix.asset }} version | grep -F "snitchmd ${GITHUB_REF_NAME#v} "
+          fi
           dist/${{ matrix.asset }} https://example.com --no-cache
 
       - name: Required glibc
