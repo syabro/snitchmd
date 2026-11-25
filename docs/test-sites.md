@@ -1,8 +1,8 @@
 # Test sites
 
-Pages to test snitchmd against, grouped by what they test. Terms (v1, prototype, v2) are defined in [design.md](design.md#terms). "Last result" is the prototype run of 2026-11-22, unless the cell says otherwise. v2 has not been run over the full lists. The only v2 results are two spot checks on 2026-11-24 (WSJ, Quora), marked in the table.
+Test pages for snitchmd, grouped by test target. Terms (v1, prototype, v2) are defined in [design.md](design.md#terms). "Last result" refers to the prototype run on 2026-11-22 unless specified in the cell. v2 has not run on the full test suite; only two spot checks from 2026-11-24 (WSJ, Quora) are recorded.
 
-Run with `--no-cache` and the defaults (`--wait-until done`, 30 s). An IP gets flagged after ~25 requests a day to the same DataDome site, so spread the runs out.
+Run tests with `--no-cache` and default options (`--wait-until done`, 30 s). An IP gets flagged after ~25 daily requests to the same DataDome domain; space out test runs accordingly.
 
 ## 1. Network fingerprint
 
@@ -18,7 +18,7 @@ Command: `snitchmd https://tls.peet.ws/api/all --no-cache --dump html`.
 
 ## 2. Bot detectors
 
-From CloakBrowser's `tests/test_stealth.py`. The v1 (CloakBrowser 0.3.31) and plain Lightpanda 1.0.5 results are from 2026-11-22. v2 was not run.
+Test suite from CloakBrowser's `tests/test_stealth.py`. The v1 (CloakBrowser 0.3.31) and unpatched Lightpanda 1.0.5 results are from 2026-11-22. v2 was not tested here.
 
 | URL                                                                | Checks                                              | v1                                                  | Lightpanda 1.0.5                              |
 | ------------------------------------------------------------------ | --------------------------------------------------- | --------------------------------------------------- | --------------------------------------------- |
@@ -29,11 +29,11 @@ From CloakBrowser's `tests/test_stealth.py`. The v1 (CloakBrowser 0.3.31) and pl
 | https://demo.fingerprint.com/web-scraping                          | FingerprintJS; needs a click on Search (`--script`) | not checked                                         | "bad request"                                 |
 | https://recaptcha-demo.appspot.com/recaptcha-v3-request-scores.php | reCAPTCHA v3 score                                  | 0.9                                                 | 0.9                                           |
 
-The reCAPTCHA v3 demo is not useful: its key is over the free quota and returns a static 0.9 to everyone. Detector pages render their verdict only with `--load-resources iframe --load-resources worker --with-frames`.
+The reCAPTCHA v3 demo does not validate evasion: its API key exceeded the free quota and returns a static score of 0.9 to all clients. Detector pages run checks in iframes and workers, so their verdict appears only with `--load-resources iframe --load-resources worker --with-frames`.
 
 ## 3. Real sites
 
-The 35 sites come from can1357's table (https://x.com/can1357/status/2090837707069014224, names only; we chose the URLs). ✓ content, ◐ page loads without the content, × blocked.
+The 35 sites are taken from can1357's test list (https://x.com/can1357/status/2090837707069014224, domain names only; URLs chosen for this test). Result markers: ✓ content extracted, ◐ page loaded without target content, × blocked.
 
 | Site            | URL                                              | Protection                                    | Last result                                                  |
 | --------------- | ------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------ |
@@ -51,7 +51,7 @@ The 35 sites come from can1357's table (https://x.com/can1357/status/20908377070
 | X — tweet       | https://x.com/can1357/status/2090837707069014224 |                                               | ✓                                                            |
 | X — profile     | https://x.com/can1357                            |                                               | ✓                                                            |
 | Facebook        | https://www.facebook.com/facebook                | login wall                                    | ◐                                                            |
-| Threads         | https://www.threads.com/@zuck                    |                                               | ✓ (worse: less text than with UA `Lightpanda/1.0`; cause not investigated) |
+| Threads         | https://www.threads.com/@zuck                    |                                               | ✓ (extracts less text than with UA `Lightpanda/1.0`; root cause uninvestigated) |
 | Instagram       | https://www.instagram.com/instagram/             |                                               | ✓                                                            |
 | LinkedIn        | https://www.linkedin.com/company/microsoft/      | Cloudflare                                    | ✓                                                            |
 | Pinterest       | https://www.pinterest.com/pinterest/             |                                               | ✓                                                            |
@@ -64,7 +64,7 @@ The 35 sites come from can1357's table (https://x.com/can1357/status/20908377070
 | Twitch          | https://www.twitch.tv/twitch                     |                                               | ✓                                                            |
 | GitHub          | https://github.com/lightpanda-io/browser         |                                               | ✓                                                            |
 | HN              | https://news.ycombinator.com/                    | rate limit by IP                              | ✓                                                            |
-| Substack        | https://on.substack.com/                         |                                               | ✓ (needs `style-index.js`)                                   |
+| Substack        | https://on.substack.com/                         |                                               | ✓ (requires `style-index.js`)                                |
 | Tumblr          | https://staff.tumblr.com/                        | own JS challenge                              | ✓                                                            |
 | Bluesky         | https://bsky.app/profile/bsky.app                |                                               | ✓                                                            |
 | Mastodon        | https://mastodon.social/@Mastodon                |                                               | ✓                                                            |
@@ -73,11 +73,11 @@ The 35 sites come from can1357's table (https://x.com/can1357/status/20908377070
 | Flickr          | https://www.flickr.com/explore                   |                                               | ✓ (v2 once panicked on an emoji)                             |
 | Imgur           | https://imgur.com/                               |                                               | ✓                                                            |
 
-Prototype on 33 sites, 2026-11-22 (NYTimes and The Athletic left out): 30 ✓ / 2 ◐ / 1 ×.
+Prototype test across 33 sites on 2026-11-22 (NYTimes and The Athletic omitted due to IP block): 30 ✓ / 2 ◐ / 1 ×.
 
 ## 4. Extraction quality
 
-Compared on 2026-11-22. Expected result for each of the eight pages below: main text kept, navigation dropped, nothing cut off.
+Benchmark runs on 2026-11-22. Expected output for the eight target pages: main content retained, navigation stripped, no truncated sections.
 
 - https://en.wikipedia.org/wiki/Web_scraping
 - https://stackoverflow.com/questions/11227809
@@ -88,15 +88,15 @@ Compared on 2026-11-22. Expected result for each of the eight pages below: main 
 - https://www.theatlantic.com/
 - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
 
-Other known cases:
+Known test cases:
 
-- https://en.wikipedia.org/wiki/Red_panda — known issue: 11.8 MB of padded navigation tables.
-- [scrapinghub/article-extraction-benchmark](https://github.com/scrapinghub/article-extraction-benchmark) — 181 articles with reference article text (ground truth); rs-trafilatura reports F1 0.966.
-- [Web Content Extraction Benchmark](https://github.com/Murrough-Foley/web-content-extraction-benchmark) — 1,497 pages of 7 page types; rs-trafilatura reports F1 0.859.
+- https://en.wikipedia.org/wiki/Red_panda — known issue: outputs 11.8 MB of padded navigation tables.
+- [scrapinghub/article-extraction-benchmark](https://github.com/scrapinghub/article-extraction-benchmark) — 181 articles with reference text ground truth; rs-trafilatura scores F1 0.966.
+- [Web Content Extraction Benchmark](https://github.com/Murrough-Foley/web-content-extraction-benchmark) — 1,497 pages across 7 page types; rs-trafilatura scores F1 0.859.
 
-Both benchmarks use offline HTML with reference text, so they test rs-trafilatura, not fetching.
+Both benchmarks run against local HTML with reference text and evaluate rs-trafilatura alone, not network fetching.
 
 ## 5. Lightpanda engine
 
-- https://demo-browser.lightpanda.io/ — a live page that Lightpanda's CI runs the full fetch against (`.github/workflows/agent-regression.yml`).
-- https://demo-browser.lightpanda.io/campfire-commerce/ — JS-rendered shop page.
+- https://demo-browser.lightpanda.io/ — live target tested by Lightpanda's CI fetch job (`.github/workflows/agent-regression.yml`).
+- https://demo-browser.lightpanda.io/campfire-commerce/ — client-rendered store page.
