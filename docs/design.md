@@ -10,7 +10,7 @@ Evidence comes from the 2026-11-22 comparison runs across 35 sites and 6 bot det
 
 Exit codes: 0 success; 1 error, including bot challenge; 2 no main content; 22 HTTP status 400 or higher.
 
-## How it works
+## Pipeline
 
 `snitchmd URL` runs Lightpanda's `fetch` command with patches:
 
@@ -59,7 +59,7 @@ Lightpanda passes Cloudflare, AWS WAF, and Tumblr JS challenges on StackOverflow
 
 ## Alternatives
 
-| Tool                                                            | Result on 35 sites                              | Why rejected                                                                                     |
+| Tool                                                            | Result on 35 sites                              | Drawback                                                                                         |
 | --------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | headless Chromium under chrome-cli (AppleScript, no CDP)        | 32 ✓ / 2 ◐ / 1 × — best; passes all 6 detectors | macOS only; requires GUI app; one instance per bundle id                                         |
 | Obscura 0.2.7 `--stealth` (Rust + V8, Chrome 145 network)       | 25 / 3 / 5                                      | fails Cloudflare, AWS WAF, and Tumblr JS challenges after 35 s; stalls in Turnstile iframe       |
