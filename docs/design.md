@@ -47,11 +47,11 @@ non-browser (sannysoft 7 failed). Sites that need those will fail.
 
 On the first request, with no JS (curl_cffi 0.17, same IP):
 
-| Profile | FT | Quora | Reddit |
-|---|---|---|---|
-| Safari | ✓ | ✓ | JS challenge |
-| Chrome 152 | block | ✓ | JS challenge |
-| Firefox | block | block | JS challenge |
+| Profile    | FT    | Quora | Reddit       |
+| ---------- | ----- | ----- | ------------ |
+| Safari     | ✓     | ✓     | JS challenge |
+| Chrome 152 | block | ✓     | JS challenge |
+| Firefox    | block | block | JS challenge |
 
 Mixing network and headers showed the network layer decides; User-Agent and
 headers don't. Safari also skips `Sec-Ch-Ua`/`userAgentData`, so Lightpanda has
@@ -82,15 +82,15 @@ StackOverflow, IMDb, Tumblr and Quora by itself, given time: with
 
 ## Alternatives
 
-| Tool | Result on 35 sites | Why not |
-|---|---|---|
-| headless Chromium under chrome-cli (AppleScript, no CDP) | 32 ✓ / 2 ◐ / 1 × — best; passes all 6 detectors | macOS only, needs the GUI app, one instance per bundle id |
-| Obscura 0.2.7 `--stealth` (Rust + V8, Chrome 145 network) | 25 / 3 / 5 | doesn't pass Cloudflare/AWS WAF/Tumblr JS challenges even after 35 s; stalls in Turnstile iframe |
-| Firecrawl Local, `--browser always`, no cloud | 25 / 2 / 5 (+1 error) of 33 | plain automated Chromium (`webdriver: true`, CDP); real anti-bot work is in their cloud |
-| snitchmd v1 (CloakBrowser) | 27 / 1 / 5 of 33 | see above; also cut stdout at 64 KB |
-| curl_cffi `safari`, no JS | 13 content of 33 | no JS: challenges and JS-built pages fail |
-| Real Firefox 160 headless | FT, Quora, Reddit ✓ (spot check) | needs Firefox; curl_cffi's Firefox profile is worse than the real one |
-| Lightpanda with UA `OpenAI File Downloader` (the tweet's trick) | 18 / 6 / 11 | worse than default; doesn't reproduce from this IP |
+| Tool                                                            | Result on 35 sites                              | Why not                                                                                          |
+| --------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| headless Chromium under chrome-cli (AppleScript, no CDP)        | 32 ✓ / 2 ◐ / 1 × — best; passes all 6 detectors | macOS only, needs the GUI app, one instance per bundle id                                        |
+| Obscura 0.2.7 `--stealth` (Rust + V8, Chrome 145 network)       | 25 / 3 / 5                                      | doesn't pass Cloudflare/AWS WAF/Tumblr JS challenges even after 35 s; stalls in Turnstile iframe |
+| Firecrawl Local, `--browser always`, no cloud                   | 25 / 2 / 5 (+1 error) of 33                     | plain automated Chromium (`webdriver: true`, CDP); real anti-bot work is in their cloud          |
+| snitchmd v1 (CloakBrowser)                                      | 27 / 1 / 5 of 33                                | see above; also cut stdout at 64 KB                                                              |
+| curl_cffi `safari`, no JS                                       | 13 content of 33                                | no JS: challenges and JS-built pages fail                                                        |
+| Real Firefox 160 headless                                       | FT, Quora, Reddit ✓ (spot check)                | needs Firefox; curl_cffi's Firefox profile is worse than the real one                            |
+| Lightpanda with UA `OpenAI File Downloader` (the tweet's trick) | 18 / 6 / 11                                     | worse than default; doesn't reproduce from this IP                                               |
 
 ## Open questions
 
