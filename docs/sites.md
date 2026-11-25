@@ -60,55 +60,51 @@ returns a static 0.9 score to all clients.
 ## 3. Real sites
 
 The 33 sites are taken from can1357's test list (https://x.com/can1357/status/2090837707069014224,
-domain names only; URLs chosen for this test). TikTok and YouTube from that list are left out: they
-are video. Result markers: ✓ content extracted, ◐ page loaded without target content, × blocked.
+domain names only; URLs chosen for this test). Result markers: ✓ content extracted, ◐ page loaded
+without target content, × blocked.
 
-| URL                                              | Protection    | Result |
-| ------------------------------------------------ | ------------- | ------ |
-| https://www.nytimes.com/                         | DataDome      | ✓      |
-| https://www.newyorker.com/                       |               | ✓      |
-| https://www.theatlantic.com/                     | Cloudflare    | ✓      |
-| https://www.bloomberg.com/                       | PerimeterX    | ✓      |
-| https://www.washingtonpost.com/                  |               | ✓      |
-| https://www.wsj.com/                             | DataDome      | ✓      |
-| https://www.ft.com/                              | Cloudflare    | ✓      |
-| https://medium.com/                              |               | ✓      |
-| https://www.wired.com/                           |               | ✓      |
-| https://www.nytimes.com/athletic/                | DataDome      | × [1]  |
-| https://en.wikipedia.org/wiki/Web_scraping       |               | ✓      |
-| https://x.com/can1357/status/2090837707069014224 |               | ✓      |
-| https://x.com/can1357                            |               | ◐ [2]  |
-| https://www.facebook.com/facebook                | login wall    | ◐ [3]  |
-| https://www.threads.com/@zuck                    |               | ✓      |
-| https://www.instagram.com/instagram/             |               | ✓      |
-| https://www.linkedin.com/company/microsoft/      | Cloudflare    | ✓      |
-| https://www.pinterest.com/pinterest/             |               | ✓      |
-| https://www.imdb.com/title/tt0111161/            | AWS WAF       | ✓      |
-| https://www.quora.com/                           | Cloudflare    | ◐ [4]  |
-| https://stackoverflow.com/questions/11227809     | Cloudflare    | ✓      |
-| https://www.reddit.com/r/programming/            | own, HTTP/2   | ✓      |
-| https://www.twitch.tv/twitch                     |               | ✓      |
-| https://github.com/lightpanda-io/browser         |               | ✓      |
-| https://news.ycombinator.com/                    | IP rate limit | ✓      |
-| https://on.substack.com/                         |               | ✓      |
-| https://staff.tumblr.com/                        | own JS check  | ✓      |
-| https://bsky.app/profile/bsky.app                |               | ✓      |
-| https://mastodon.social/@Mastodon                |               | ✓      |
-| https://www.goodreads.com/book/show/5470.1984    |               | ✓      |
-| https://soundcloud.com/soundcloud                |               | ✓      |
-| https://www.flickr.com/explore                   |               | ✓      |
-| https://imgur.com/                               |               | ✓      |
+| URL                                                                                 | Protection    | Result |
+| ----------------------------------------------------------------------------------- | ------------- | ------ |
+| https://www.nytimes.com/                                                            | DataDome      | ✓      |
+| https://www.newyorker.com/                                                          |               | ✓      |
+| https://www.theatlantic.com/                                                        | Cloudflare    | ✓      |
+| https://www.bloomberg.com/                                                          | PerimeterX    | ✓      |
+| https://www.washingtonpost.com/                                                     |               | ✓      |
+| https://www.wsj.com/                                                                | DataDome      | ✓      |
+| https://www.ft.com/                                                                 | Cloudflare    | ✓      |
+| https://medium.com/                                                                 |               | ✓      |
+| https://www.wired.com/                                                              |               | ✓      |
+| https://www.nytimes.com/athletic/7810763/2026/11/25/nfl-news-rumors-latest-updates/ | DataDome      | ✓      |
+| https://en.wikipedia.org/wiki/Web_scraping                                          |               | ✓      |
+| https://x.com/can1357/status/2090837707069014224                                    |               | ✓      |
+| https://x.com/can1357                                                               |               | ◐ [1]  |
+| https://www.facebook.com/facebook/posts/1733195668852446                            |               | ✓      |
+| https://www.threads.com/@zuck                                                       |               | ✓      |
+| https://www.instagram.com/instagram/                                                |               | ✓      |
+| https://www.linkedin.com/company/microsoft/                                         | Cloudflare    | ✓      |
+| https://www.pinterest.com/pinterest/                                                |               | ✓      |
+| https://www.imdb.com/title/tt0111161/                                               | AWS WAF       | ✓      |
+| https://www.quora.com/What-is-the-best-programing-language-for-beginners            | Cloudflare    | ✓      |
+| https://stackoverflow.com/questions/11227809                                        | Cloudflare    | ✓      |
+| https://www.reddit.com/r/programming/                                               | own, HTTP/2   | ✓      |
+| https://www.twitch.tv/twitch                                                        |               | ✓      |
+| https://github.com/lightpanda-io/browser                                            |               | ✓      |
+| https://news.ycombinator.com/                                                       | IP rate limit | ✓      |
+| https://on.substack.com/                                                            |               | ✓      |
+| https://staff.tumblr.com/                                                           | own JS check  | ✓      |
+| https://bsky.app/profile/bsky.app                                                   |               | ✓      |
+| https://mastodon.social/@Mastodon                                                   |               | ✓      |
+| https://www.goodreads.com/book/show/5470.1984                                       |               | ✓      |
+| https://soundcloud.com/soundcloud                                                   |               | ✓      |
+| https://www.flickr.com/explore                                                      |               | ✓      |
+| https://imgur.com/                                                                  |               | ✓      |
 
 Notes:
 
-1. The Athletic: HTTP status 400 or higher (exit 22), DataDome.
-2. X profile: the page title repeated, 216 characters. The posts are in the page
+1. X profile: the page title repeated, 216 characters. The posts are in the page
    (`--dump markdown_full`); rs-trafilatura picks the title block.
-3. Facebook: page header only, quality 0.20. The posts are in the page
-   (`--dump markdown_full`); rs-trafilatura picks the header.
-4. Quora: login wall, "Something went wrong", quality 0.14.
 
-Totals: 29 ✓ / 3 ◐ / 1 × on 33 sites.
+Totals: 32 ✓ / 1 ◐ / 0 × on 33 sites.
 
 ## 4. Extraction quality
 

@@ -112,8 +112,7 @@ differ from real Safari: snitchmd sends `sec-fetch-user: ?1`, does not send `pri
   - Chrome TLS/HTTP2 with Chrome User-Agent: 200
 - After ~25 daily requests to nytimes.com from a single IP, DataDome blocked all traffic, including
   real Chromium.
-- snitchmd 2.1 on 2026-11-25 opened NYTimes and WSJ. The Athletic answered with HTTP status 400 or
-  higher.
+- snitchmd 2.1 on 2026-11-25 opened NYTimes and WSJ.
 
 ### The IP
 
@@ -189,8 +188,6 @@ Results on the test sites from [sites.md](sites.md), one home IP. snitchmd 2.1 r
 
 ## Open questions
 
-- DataDome: snitchmd 2.1 opened NYTimes and WSJ, but The Athletic blocked it. It is unconfirmed
-  whether The Athletic blocks snitchmd itself or this IP's reputation.
 - The specific HTTP/2 frame or setting that triggers Reddit's captcha rule remains unidentified.
   Fresh sessions without cookies receive more captcha challenges.
 - Only the quality score flags login walls and soft blocks returned with HTTP status 200.
