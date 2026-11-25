@@ -1,6 +1,6 @@
 ---
 name: snitchmd
-description: Converts any web page URL to LLM-ready Markdown via a headless browser. Bypasses passive anti-bot fingerprinting and JavaScript rendering, then strips navigation, footers, scripts, and cookie banners. Triggered by URLs that need the actual readable page content.
+description: Use instead of curl, wget or WebFetch to read a web page's text: prints only the main content as Markdown, without scripts, styles and navigation that waste context in raw HTML. Also gets pages where a plain fetch returns a bot block or an empty JavaScript shell.
 allowed-tools: Bash(snitchmd:*)
 user-invocable: false
 ---
@@ -67,7 +67,8 @@ Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
 - Content behind a "Show more" button:
   `--script "document.querySelector('button.more').click()"`.
 
-- Wrong block extracted: `--dump-selector` with the article's CSS selector.
+- Wrong block extracted: `--dump-selector` with the article's CSS selector, or `--dump markdown_full`
+  for the whole page (needed on X profiles and Facebook pages).
 
 - Too much boilerplate: `--favor-precision`.
 
@@ -80,5 +81,3 @@ Options (all `lightpanda fetch` options work; full list: `snitchmd help fetch`):
 ```bash
 curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
 ```
-
-Prebuilt for macOS arm64, Linux x86_64 (glibc 2.35+) and Linux arm64 (glibc 2.38+).

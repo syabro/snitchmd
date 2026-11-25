@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs snitchmd over docs/sites.md: the tls.peet.ws fingerprint check (section 1)
 # and the real sites (section 3). Bot detectors (section 2) are checked by hand.
-# Usage: scripts/test-sites [path/to/snitchmd]
+# Usage: scripts/test-sites.sh [path/to/snitchmd]
 # Writes tmp/test-sites/<date>.tsv. DataDome sites go last, one request per URL;
 # nytimes.com gets two (the front page and /athletic/), and DataDome counts per domain.
 set -euo pipefail

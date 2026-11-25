@@ -1,6 +1,6 @@
 # Sites
 
-Test pages for snitchmd, grouped by test target. `scripts/test-sites` checks tls.peet.ws from section 1
+Test pages for snitchmd, grouped by test target. `scripts/test-sites.sh` checks tls.peet.ws from section 1
 and runs section 3.
 Results are from snitchmd 2.1 (a CI build before release) on 2026-11-25, from one home IP.
 

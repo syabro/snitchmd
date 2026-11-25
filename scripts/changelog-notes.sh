@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Print the CHANGELOG.md section body for a given version (no heading).
-# Usage: scripts/changelog-notes 0.2.1
+# Usage: scripts/changelog-notes.sh 0.2.1
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
-  echo "Usage: scripts/changelog-notes VERSION" >&2
+  echo "Usage: scripts/changelog-notes.sh VERSION" >&2
   exit 1
 fi
 

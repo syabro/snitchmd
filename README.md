@@ -32,8 +32,8 @@ read https://github.com/syabro/snitchmd/blob/master/README.md, install https://r
 Needs Zig 0.17, Rust (cargo), git, curl, make.
 
 ```sh
-./build.sh            # fetch pinned sources, patch, build → dist/snitchmd (~8 min)
-./build.sh prepare    # fetch and patch into build/ without building
+scripts/build.sh            # fetch pinned sources, patch, build → dist/snitchmd (~8 min)
+scripts/build.sh prepare    # fetch and patch into build/ without building
 ```
 
 To change Lightpanda:

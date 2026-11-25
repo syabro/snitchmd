@@ -59,7 +59,7 @@ jobs:
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             ZIGFLAGS="$ZIGFLAGS -Dsnitchmd_version=${GITHUB_REF_NAME#v}"
           fi
-          ZIGFLAGS="$ZIGFLAGS" ./build.sh
+          ZIGFLAGS="$ZIGFLAGS" scripts/build.sh
 
       - name: Strip
         run: strip -o dist/${{ matrix.asset }} dist/snitchmd
@@ -103,5 +103,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          scripts/changelog-notes "${TAG#v}" \
+          scripts/changelog-notes.sh "${TAG#v}" \
             | gh release create "$TAG" --title "$TAG" --notes-file - dist/snitchmd-*
