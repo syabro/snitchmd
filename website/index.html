@@ -619,10 +619,12 @@
     .usage-output--wrap {
       white-space: pre-wrap;
     }
+    .usage-output--json {
+      color: var(--muted);
+    }
     .install-label code,
     .usage-desc code {
       font-family: var(--font-mono);
-      font-size: var(--size-mono);
       font-weight: 600;
       color: var(--ink);
     }
@@ -937,13 +939,13 @@ The first step is to decide what to work on<span class="tok-dim">...</span></pre
           </div>
           <div class="usage-terminal">
             <div class="usage-cmd"><span class="prompt">$ </span>snitchmd --json https://paulgraham.com/greatwork.html</div>
-            <pre class="usage-output">{
-  <span class="tok-tag">"url"</span>: "https://paulgraham.com/greatwork.html",
-  <span class="tok-tag">"title"</span>: "How to Do Great Work",
-  <span class="tok-tag">"quality"</span>: 0.7,
-  <span class="tok-tag">"chars"</span>: 133088,
-  <span class="tok-tag">"markdown"</span>: "July 2023\n\nIf you collected lists<span class="tok-dim">..."</span>
-}</pre>
+            <pre class="usage-output usage-output--json"><span class="tok-bold">{</span>
+  <span class="tok-bold">"url"</span>: "https://paulgraham.com/greatwork.html",
+  <span class="tok-bold">"title"</span>: "How to Do Great Work",
+  <span class="tok-bold">"quality"</span>: 0.7,
+  <span class="tok-bold">"chars"</span>: 133088,
+  <span class="tok-bold">"markdown"</span>: "July 2023\n\nIf you collected lists..."
+<span class="tok-bold">}</span></pre>
           </div>
         </div>
 
