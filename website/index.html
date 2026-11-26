@@ -592,14 +592,13 @@
       color: var(--muted);
     }
     .usage-terminal {
-      background: var(--bg-alt);
+      background: var(--surface-code);
       border-radius: 2px;
       overflow: hidden;
     }
     .usage-cmd {
-      padding: 10px 16px 10px calc(16px + 2ch);
+      padding: 14px 16px 6px calc(16px + 2ch);
       text-indent: -2ch;
-      background: var(--surface-code);
       font-family: var(--font-mono);
       font-size: var(--size-mono);
       font-weight: 600;
@@ -609,7 +608,7 @@
     }
     .usage-output {
       margin: 0;
-      padding: 14px 16px;
+      padding: 6px 16px 14px;
       font-family: var(--font-mono);
       font-size: 0.78rem;
       line-height: 1.55;
@@ -906,7 +905,7 @@
             <img class="art-dark" src="3d.webp" alt="" loading="lazy" />
           </div>
           <h2 class="feature-title">Ready for AI agents</h2>
-          <p class="feature-desc">Built-in MCP server plus clean Markdown and JSON output for Claude Code, Cursor, and Codex.</p>
+          <p class="feature-desc">Clean Markdown and JSON output with a ready skill for Claude Code, Cursor, and Codex.</p>
         </div>
       </div>
     </div>
@@ -962,25 +961,6 @@ The first step is to decide what to work on<span class="tok-dim">...</span></pre
 | Developed by        | John Gruber      |
 | Initial release     | March 9, 2004    |
 | Type of format      | Open file format |</pre>
-          </div>
-        </div>
-
-        <div class="usage-row usage-row--flip">
-          <div class="usage-copy">
-            <h3 class="usage-title">Built-in MCP server</h3>
-            <p class="usage-desc">Starts an MCP server for Claude Code, Cursor, Codex, and other AI agents.</p>
-          </div>
-          <div class="usage-terminal">
-            <div class="usage-cmd"><span class="prompt">$ </span>snitchmd mcp</div>
-            <pre class="usage-output"><span class="tok-dim">// .mcp.json</span>
-{
-  <span class="tok-tag">"mcpServers"</span>: {
-    <span class="tok-tag">"snitchmd"</span>: {
-      <span class="tok-tag">"command"</span>: "snitchmd",
-      <span class="tok-tag">"args"</span>: ["mcp"]
-    }
-  }
-}</pre>
           </div>
         </div>
       </div>
