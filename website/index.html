@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>snitchmd — Fetch clean Markdown, bypassing Cloudflare and JS protection</title>
   <meta name="description" content="Fetch clean Markdown for humans and AI agents, bypassing Cloudflare and JS protection. Single 75 MB binary for macOS and Linux runs locally, without API keys." />
+  <link rel="icon" type="image/svg+xml" href="lightning.svg" />
   <link rel="canonical" href="https://snitchmd.syabro.com/" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://snitchmd.syabro.com/" />
@@ -114,6 +115,15 @@
       line-height: 0.92;
       letter-spacing: -0.045em;
       margin: 0 0 0 -0.035em;
+    }
+    .wordmark img {
+      width: 0.45em;
+      height: 0.73em;
+      margin-right: 0.1em;
+      margin-bottom: -0.5rem;
+    }
+    @media (min-width: 1100px) {
+      .wordmark img { margin-left: -0.55em; }
     }
     .lead {
       margin: 20px 0 0;
@@ -794,7 +804,7 @@
       </div>
 
       <header class="hero">
-      <h1 class="wordmark">snitchmd</h1>
+      <h1 class="wordmark"><img src="lightning.svg" alt="" />snitchmd</h1>
       <p class="lead">
         <span class="lead-hl">Fetch</span> clean <span class="lead-hl">Markdown</span> for humans and AI agents, <span class="lead-hl">bypassing</span> Cloudflare and JS <span class="lead-hl">protection</span>.
         <span class="lead-sub">
