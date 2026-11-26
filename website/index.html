@@ -632,6 +632,12 @@
     .usage-output--json {
       color: var(--muted);
     }
+    p code { font-size: 0.92em; }
+    .feature-desc code {
+      background: color-mix(in srgb, currentColor 12%, transparent);
+      padding: 0.05em 0.25em;
+      border-radius: 3px;
+    }
     .install-label code,
     .usage-desc code {
       font-family: var(--font-mono);
@@ -908,8 +914,8 @@
             <img class="art-light" src="2.webp" alt="" loading="lazy" />
             <img class="art-dark" src="2d.webp" alt="" loading="lazy" />
           </div>
-          <h2 class="feature-title">Fast on repeat calls</h2>
-          <p class="feature-desc">Saved to disk after the first fetch, so repeat calls for the same URL return immediately.</p>
+          <h2 class="feature-title">Mega-ultra-super fast</h2>
+          <p class="feature-desc"><strong>112ms</strong> to start and get Markdown from example.com.<br />VS about 1s with agent-browser.</p>
         </div>
         <div class="col">
           <div class="feature-art" aria-hidden="true">
@@ -917,7 +923,7 @@
             <img class="art-dark" src="3d.webp" alt="" loading="lazy" />
           </div>
           <h2 class="feature-title">Ready for AI agents</h2>
-          <p class="feature-desc">Clean Markdown and JSON output with a ready skill for Claude Code, Cursor, and Codex.</p>
+          <p class="feature-desc">Clean Markdown and JSON output with a <code>/snitchmd</code> skill for Claude Code, Cursor, and Codex.</p>
         </div>
       </div>
     </div>
