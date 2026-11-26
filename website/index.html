@@ -493,6 +493,42 @@
       display: block;
     }
 
+    .grid-3 .col {
+      text-align: center;
+    }
+    .feature-art {
+      margin: 0 auto 24px;
+      width: 100%;
+      max-width: 220px;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+    }
+    .feature-art-inset {
+      padding: 34px 20px 14px;
+    }
+    .feature-art img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .feature-art .art-light {
+      filter: brightness(1.04) contrast(1.06);
+      mix-blend-mode: multiply;
+    }
+    .feature-art .art-dark {
+      display: none;
+      filter: brightness(0.95) contrast(1.08);
+      mix-blend-mode: lighten;
+    }
+    :root[data-theme="dark"] .feature-art .art-light {
+      display: none;
+    }
+    :root[data-theme="dark"] .feature-art .art-dark {
+      display: block;
+    }
+
     .feature-title {
       margin: 0 0 10px;
       font-weight: 800;
@@ -760,14 +796,26 @@
     <div class="container">
       <div class="grid-3">
         <div class="col">
+          <div class="feature-art" aria-hidden="true">
+            <img class="art-light" src="1.png" alt="" loading="lazy" />
+            <img class="art-dark" src="1d.png" alt="" loading="lazy" />
+          </div>
           <h2 class="feature-title">Passes bot protection</h2>
           <p class="feature-desc">Clears Cloudflare, DataDome, AWS WAF, and JS challenges on Stack Overflow, Reddit, NYTimes, WSJ, FT, and IMDb.</p>
         </div>
         <div class="col">
+          <div class="feature-art feature-art-inset" aria-hidden="true">
+            <img class="art-light" src="2.png" alt="" loading="lazy" />
+            <img class="art-dark" src="2d.png" alt="" loading="lazy" />
+          </div>
           <h2 class="feature-title">Fast on repeat calls</h2>
           <p class="feature-desc">Saved to disk after the first fetch, so repeat calls for the same URL return immediately.</p>
         </div>
         <div class="col">
+          <div class="feature-art" aria-hidden="true">
+            <img class="art-light" src="3.png" alt="" loading="lazy" />
+            <img class="art-dark" src="3d.png" alt="" loading="lazy" />
+          </div>
           <h2 class="feature-title">Ready for AI agents</h2>
           <p class="feature-desc">Built-in MCP server plus clean Markdown and JSON output for Claude Code, Cursor, and Codex.</p>
         </div>
