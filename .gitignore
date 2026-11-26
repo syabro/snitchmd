@@ -5,3 +5,4 @@ tmp/
 /3rdparty/
 /dist/
 .local/
+.DS_Store
