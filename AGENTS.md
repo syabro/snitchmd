@@ -1,3 +1,7 @@
+## Git approval
+
+In this repository, an explicit command to commit, push, or release (for example, «коммить», «пушь», or «релизь») is approval for that action and the steps it requires. Proceed without a second confirmation or preview approval. A commit request alone does not authorize a push. If the scope or destination is unclear, ask only for the missing detail. Verify the GitHub account before a push or release.
+
 ## README and Open Graph images
 
 When the landing page logo, headline, or intro changes, render the updated header from `website/index.html` and include these images in the same change:
