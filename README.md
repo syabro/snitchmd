@@ -21,13 +21,7 @@ curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh |
 
 Installs the binary to `/usr/local/bin` or `~/.local/bin` and the agent skill for Claude Code, Cursor, and Codex.
 
-Prebuilt for macOS arm64, macOS x86_64, Linux x86_64 (glibc 2.35+), and Linux arm64 (glibc 2.38+).
-
-Uninstall:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash -s -- --uninstall
-```
+Or download manually for macOS or Linux from [GitHub Releases](https://github.com/syabro/snitchmd/releases).
 
 ## Usage
 
@@ -88,8 +82,6 @@ Built on [Lightpanda](https://github.com/lightpanda-io/browser) with patches bak
 - Main content extraction via [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura), printing Markdown by default.
 - Telemetry is off.
 
-The previous Docker + CloakBrowser version lives on the `v1` branch (`--headful` and `--humanize` were Chromium-only and are not carried over).
-
 ## Build from source
 
 Requires Zig 0.17, Rust (`cargo`), `git`, `curl`, and `make`.
@@ -117,3 +109,13 @@ Pinned versions are in `versions.env`. Patches:
 - **BoringSSL:** `patches/boringssl.patch` (curl-impersonate, unchanged)
 - **boringssl-zig:** `patches/boringssl-zig.patch` (uses local BoringSSL; source list fixed for `BORINGSSL_REV` in `versions.env`)
 - **Lightpanda:** `patches/lightpanda.patch`
+
+## Uninstall
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash -s -- --uninstall
+```
+
+## Previous version
+
+The previous Docker + CloakBrowser version lives on the `v1` branch (`--headful` and `--humanize` were Chromium-only and are not carried over).
