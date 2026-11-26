@@ -555,44 +555,58 @@
     /* 3. Usage */
     .usage-list {
       display: grid;
-      gap: 64px;
+      gap: 56px;
       margin-top: 8px;
     }
     .usage-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 40px;
-      align-items: start;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+      gap: 48px;
+      align-items: center;
     }
-    .usage-row--flip .usage-result {
+    .usage-row--flip {
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    }
+    .usage-row--flip .usage-terminal {
       order: -1;
     }
     .usage-copy,
-    .usage-result {
+    .usage-terminal {
       min-width: 0;
     }
     .usage-title {
       margin: 0 0 8px;
-      font-weight: 700;
-      font-size: 1.05rem;
+      font-weight: 800;
+      font-size: 1.1rem;
       letter-spacing: -0.015em;
       line-height: 1.25;
       color: var(--ink);
     }
     .usage-desc {
-      margin: 0 0 14px;
+      margin: 0;
       font-size: var(--size-body);
+      line-height: 1.55;
+      color: var(--muted);
+    }
+    .usage-terminal {
+      background: var(--bg-alt);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .usage-cmd {
+      padding: 10px 16px 10px calc(16px + 2ch);
+      text-indent: -2ch;
+      background: var(--surface-code);
+      font-family: var(--font-mono);
+      font-size: var(--size-mono);
+      font-weight: 600;
       line-height: 1.5;
       color: var(--ink);
-    }
-    .usage-copy .cmd {
-      margin: 0;
+      overflow-wrap: anywhere;
     }
     .usage-output {
       margin: 0;
-      padding: 16px 18px;
-      background: var(--bg-alt);
-      border-radius: 2px;
+      padding: 14px 16px;
       font-family: var(--font-mono);
       font-size: 0.78rem;
       line-height: 1.55;
@@ -748,11 +762,12 @@
       .usage-list {
         gap: 40px;
       }
-      .usage-row {
+      .usage-row,
+      .usage-row--flip {
         grid-template-columns: 1fr;
         gap: 16px;
       }
-      .usage-row--flip .usage-result {
+      .usage-row--flip .usage-terminal {
         order: 0;
       }
     }
@@ -902,9 +917,9 @@
           <div class="usage-copy">
             <h3 class="usage-title">Clean Markdown to stdout</h3>
             <p class="usage-desc">Prints the article body as Markdown to <code>stdout</code> — ready to pipe into an LLM.</p>
-            <div class="cmd"><span class="prompt">$ </span>snitchmd https://paulgraham.com/greatwork.html</div>
           </div>
-          <div class="usage-result">
+          <div class="usage-terminal">
+            <div class="usage-cmd"><span class="prompt">$ </span>snitchmd https://paulgraham.com/greatwork.html</div>
             <pre class="usage-output usage-output--wrap"><span class="tok-dim">July 2023</span>
 
 If you collected lists of techniques for doing great work in a lot of different fields, what would the intersection look like? I decided to find out by making it.
@@ -917,9 +932,9 @@ The first step is to decide what to work on<span class="tok-dim">...</span></pre
           <div class="usage-copy">
             <h3 class="usage-title">Structured JSON</h3>
             <p class="usage-desc">Returns JSON with title, final URL, quality score, and Markdown for scripts and pipelines.</p>
-            <div class="cmd"><span class="prompt">$ </span>snitchmd --json https://paulgraham.com/greatwork.html</div>
           </div>
-          <div class="usage-result">
+          <div class="usage-terminal">
+            <div class="usage-cmd"><span class="prompt">$ </span>snitchmd --json https://paulgraham.com/greatwork.html</div>
             <pre class="usage-output">{
   <span class="tok-tag">"url"</span>: "https://paulgraham.com/greatwork.html",
   <span class="tok-tag">"title"</span>: "How to Do Great Work",
@@ -934,9 +949,9 @@ The first step is to decide what to work on<span class="tok-dim">...</span></pre
           <div class="usage-copy">
             <h3 class="usage-title">Target a CSS selector</h3>
             <p class="usage-desc">Extracts only the matching CSS selector — here, the Wikipedia infobox as a Markdown table.</p>
-            <div class="cmd"><span class="prompt">$ </span>snitchmd --dump-selector "table.infobox" https://en.wikipedia.org/wiki/Markdown</div>
           </div>
-          <div class="usage-result">
+          <div class="usage-terminal">
+            <div class="usage-cmd"><span class="prompt">$ </span>snitchmd --dump-selector "table.infobox" https://en.wikipedia.org/wiki/Markdown</div>
             <pre class="usage-output">| <span class="tok-bold">Markdown</span>            |                  |
 | ------------------- | ---------------- |
 | Filename extensions | .md, .markdown   |
@@ -951,10 +966,11 @@ The first step is to decide what to work on<span class="tok-dim">...</span></pre
           <div class="usage-copy">
             <h3 class="usage-title">Built-in MCP server</h3>
             <p class="usage-desc">Starts an MCP server for Claude Code, Cursor, Codex, and other AI agents.</p>
-            <div class="cmd"><span class="prompt">$ </span>snitchmd mcp</div>
           </div>
-          <div class="usage-result">
-            <pre class="usage-output">{
+          <div class="usage-terminal">
+            <div class="usage-cmd"><span class="prompt">$ </span>snitchmd mcp</div>
+            <pre class="usage-output"><span class="tok-dim">// .mcp.json</span>
+{
   <span class="tok-tag">"mcpServers"</span>: {
     <span class="tok-tag">"snitchmd"</span>: {
       <span class="tok-tag">"command"</span>: "snitchmd",
