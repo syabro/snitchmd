@@ -585,6 +585,30 @@
     .closing {
       text-align: center;
     }
+    .closing-art {
+      margin: 0 auto 20px;
+      max-width: 720px;
+    }
+    .closing-art img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .closing-art .art-light {
+      filter: brightness(1.04) contrast(1.06);
+      mix-blend-mode: multiply;
+    }
+    .closing-art .art-dark {
+      display: none;
+      filter: brightness(0.95) contrast(1.08);
+      mix-blend-mode: lighten;
+    }
+    :root[data-theme="dark"] .closing-art .art-light {
+      display: none;
+    }
+    :root[data-theme="dark"] .closing-art .art-dark {
+      display: block;
+    }
     .closing-title {
       margin: 0;
       font-weight: 800;
@@ -793,8 +817,8 @@
     </section>
 
     <figure class="meme">
-      <img class="meme-light" src="curl-vs-snitchmd.png" alt="The Virgin curl vs The Chad snitchmd" loading="lazy" />
-      <img class="meme-dark" src="curl-vs-snitchmd-dark.png" alt="The Virgin curl vs The Chad snitchmd" loading="lazy" />
+      <img class="meme-light" src="curl-vs-snitchmd.webp" alt="The Virgin curl vs The Chad snitchmd" loading="lazy" />
+      <img class="meme-dark" src="curl-vs-snitchmd-dark.webp" alt="The Virgin curl vs The Chad snitchmd" loading="lazy" />
     </figure>
     </div>
   </div>
@@ -804,24 +828,24 @@
       <div class="grid-3">
         <div class="col">
           <div class="feature-art" aria-hidden="true">
-            <img class="art-light" src="1.png" alt="" loading="lazy" />
-            <img class="art-dark" src="1d.png" alt="" loading="lazy" />
+            <img class="art-light" src="1.webp" alt="" loading="lazy" />
+            <img class="art-dark" src="1d.webp" alt="" loading="lazy" />
           </div>
           <h2 class="feature-title">Passes bot protection</h2>
           <p class="feature-desc">Clears Cloudflare, DataDome, AWS WAF, and JS challenges on Stack Overflow, Reddit, NYTimes, WSJ, FT, and IMDb.</p>
         </div>
         <div class="col">
           <div class="feature-art feature-art-inset" aria-hidden="true">
-            <img class="art-light" src="2.png" alt="" loading="lazy" />
-            <img class="art-dark" src="2d.png" alt="" loading="lazy" />
+            <img class="art-light" src="2.webp" alt="" loading="lazy" />
+            <img class="art-dark" src="2d.webp" alt="" loading="lazy" />
           </div>
           <h2 class="feature-title">Fast on repeat calls</h2>
           <p class="feature-desc">Saved to disk after the first fetch, so repeat calls for the same URL return immediately.</p>
         </div>
         <div class="col">
           <div class="feature-art" aria-hidden="true">
-            <img class="art-light" src="3.png" alt="" loading="lazy" />
-            <img class="art-dark" src="3d.png" alt="" loading="lazy" />
+            <img class="art-light" src="3.webp" alt="" loading="lazy" />
+            <img class="art-dark" src="3d.webp" alt="" loading="lazy" />
           </div>
           <h2 class="feature-title">Ready for AI agents</h2>
           <p class="feature-desc">Built-in MCP server plus clean Markdown and JSON output for Claude Code, Cursor, and Codex.</p>
@@ -859,6 +883,10 @@
   <div class="band band-alt band-closing">
     <div class="container">
       <section class="closing" aria-label="Get started">
+        <div class="closing-art" aria-hidden="true">
+          <img class="art-light" src="i.webp" alt="" loading="lazy" />
+          <img class="art-dark" src="id.webp" alt="" loading="lazy" />
+        </div>
         <h2 class="closing-title">One binary. Clean Markdown.</h2>
         <p class="closing-sub">Runs locally on macOS and Linux.</p>
         <div class="hero-actions">

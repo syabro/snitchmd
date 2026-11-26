@@ -8,9 +8,9 @@
 ---
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="website/curl-vs-snitchmd-dark.png" />
-  <source media="(prefers-color-scheme: light)" srcset="website/curl-vs-snitchmd.png" />
-  <img alt="The Virgin curl vs The Chad snitchmd" src="website/curl-vs-snitchmd.png" />
+  <source media="(prefers-color-scheme: dark)" srcset="website/curl-vs-snitchmd-dark.webp" />
+  <source media="(prefers-color-scheme: light)" srcset="website/curl-vs-snitchmd.webp" />
+  <img alt="The Virgin curl vs The Chad snitchmd" src="website/curl-vs-snitchmd.webp" />
 </picture>
 
 ## Install
