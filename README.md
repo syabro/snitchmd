@@ -1,16 +1,14 @@
 # snitchmd
 
-URL → clean Markdown, one binary, no Docker, no Chromium.
+Fetch clean Markdown for humans and AI agents, bypassing Cloudflare and JS protection.
 
-The engine is [Lightpanda](https://github.com/lightpanda-io/browser) patched to:
+Single 75 MB binary for macOS and Linux. Runs locally, without API keys, Docker, or Chromium.
 
-- connect with Safari's network fingerprint (TLS and HTTP/2) using
-  [curl-impersonate](https://github.com/lexiforest/curl-impersonate)'s curl and BoringSSL patches;
-- send Safari's User-Agent and JS identity (`navigator.vendor`, no `userAgentData`);
-- extract the main content with [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura);
-- print Markdown by default: `snitchmd URL` needs no flags.
-
-The previous Docker + CloakBrowser version lives on the `v1` branch.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/curl-vs-snitchmd-dark.png" />
+  <source media="(prefers-color-scheme: light)" srcset="website/curl-vs-snitchmd.png" />
+  <img alt="The Virgin curl vs The Chad snitchmd" src="website/curl-vs-snitchmd.png" />
+</picture>
 
 ## Install
 
@@ -18,115 +16,101 @@ The previous Docker + CloakBrowser version lives on the `v1` branch.
 curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash
 ```
 
-Prebuilt for macOS arm64, macOS x86_64, Linux x86_64 (glibc 2.35+) and Linux arm64 (glibc 2.38+). Uninstall:
-`curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash -s -- --uninstall`.
+Installs the binary to `/usr/local/bin` or `~/.local/bin` and the agent skill for Claude Code, Cursor, and Codex.
 
-For an agent:
+Prebuilt for macOS arm64, macOS x86_64, Linux x86_64 (glibc 2.35+), and Linux arm64 (glibc 2.38+).
 
-```text
-read https://github.com/syabro/snitchmd/blob/master/README.md, install https://raw.githubusercontent.com/syabro/snitchmd/master/skills/snitchmd/SKILL.md, then show me a couple of usage examples.
+Uninstall:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/syabro/snitchmd/master/install.sh | bash -s -- --uninstall
 ```
 
-## Build
+## Usage
 
-Needs Zig 0.17, Rust (cargo), git, curl, make.
+```sh
+# Print clean Markdown to stdout
+snitchmd https://stackoverflow.com/questions/11227809
+
+# Return JSON with title, quality score, and Markdown
+snitchmd --json https://paulgraham.com/greatwork.html
+
+# Extract a specific CSS selector instead of the whole article
+snitchmd --dump-selector "table.infobox" https://en.wikipedia.org/wiki/Markdown
+
+# Start the built-in MCP server for Claude Code, Cursor, and Codex
+snitchmd mcp
+```
+
+`stderr` prints a single summary line: title, extraction quality (`0`–`1`), character count, and `(cached)` on cache hits.
+
+**Exit codes:** `0` success; `1` error (network, browser, invalid option, or bot challenge; message on stderr); `2` no main content found (loading shell, wall, or empty page); `22` HTTP status 400 or higher.
+
+### Options
+
+Every `lightpanda fetch` option works (`snitchmd help fetch`). Most used:
+
+| Flag | Description |
+| --- | --- |
+| `--json` | Prints `{url, final_url, title, page_title, page_type, quality, chars, markdown}` |
+| `--no-cache` | Fetches again instead of answering from disk cache |
+| `--html-output FILE` | Also saves the rendered HTML |
+| `--include-images` | Keeps image references |
+| `--favor-precision` | Cuts more boilerplate |
+| `--favor-recall` | Keeps more content |
+| `--dump-selector CSS` | Extracts only from the first matching element |
+| `--wait-selector CSS` | Waits for an element before extracting |
+| `--script JS`, `--script-file PATH` | Runs JS in the page before extracting |
+| `--wait-ms N` | Wait cap in ms (default `30000`) |
+| `--dump-max-bytes N` | Cuts Markdown at `N` bytes and appends `[truncated]` |
+| `--http-proxy URL` | HTTP proxy |
+| `--locale TAG`, `--timezone IANA` | Browser locale and time zone |
+| `--dump html` | Prints rendered HTML instead of Markdown |
+
+### Cache
+
+A successful Markdown fetch is cached on disk by URL and options, so repeat calls return immediately.
+
+- Not cached: errors and extractions with quality below `0.5` (login walls, 200-OK error pages); `stderr` notes `(not cached: low quality)`.
+- Location: `$SNITCHMD_CACHE_DIR` or `${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd`.
+- `--json`, `--no-cache`, `--html-output`, and `--dump-max-bytes` do not alter the cache key.
+- Refresh one URL with `--no-cache`; wipe everything with `rm -rf ~/.cache/snitchmd`.
+
+## How it works
+
+Built on [Lightpanda](https://github.com/lightpanda-io/browser) with patches baked into the binary:
+
+- Safari 27.0 TLS and HTTP/2 fingerprint via [curl-impersonate](https://github.com/lexiforest/curl-impersonate)'s curl and BoringSSL patches, plus Safari User-Agent.
+- Two scripts injected into every page (`src/browser/snitchmd/` in `patches/lightpanda.patch`): `safari.js` (Safari JS identity: `navigator.vendor`, no `userAgentData`) and `style-index.js` (indexed access to inline styles missing in Lightpanda, preventing crashes on React sites like Substack).
+- Main content extraction via [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura), printing Markdown by default.
+- Telemetry is off.
+
+The previous Docker + CloakBrowser version lives on the `v1` branch (`--headful` and `--humanize` were Chromium-only and are not carried over).
+
+## Build from source
+
+Requires Zig 0.17, Rust (`cargo`), `git`, `curl`, and `make`.
 
 ```sh
 scripts/build.sh            # fetch pinned sources, patch, build → dist/snitchmd (~8 min)
 scripts/build.sh prepare    # fetch and patch into build/ without building
 ```
 
-To change Lightpanda:
+To modify Lightpanda:
 
 ```sh
 just prepare    # pinned sources + patches into 3rdparty/ (not in git)
 # edit 3rdparty/lightpanda
-just dev        # build it → dist/snitchmd
+just dev        # build → dist/snitchmd
 just test       # Lightpanda's tests; just test NAME filters
-just patch      # write the edits back to patches/lightpanda.patch, then commit that
+just patch      # write edits back to patches/lightpanda.patch, then commit that
 ```
 
-Releases are built by GitHub Actions: `just release VERSION` tags and pushes, the workflow builds
-macOS arm64, macOS x86_64, Linux x86_64 and Linux arm64 and publishes them with notes from CHANGELOG.md.
+Releases are built by GitHub Actions: `just release VERSION` tags and pushes, and the workflow builds macOS arm64, macOS x86_64, Linux x86_64, and Linux arm64 with notes from `CHANGELOG.md`.
 
 Pinned versions are in `versions.env`. Patches:
 
-- curl: curl-impersonate `patches/curl.patch`, unchanged.
-
-- BoringSSL: curl-impersonate `patches/boringssl.patch`, unchanged.
-
-- boringssl-zig: `patches/boringssl-zig.patch`. It uses the local BoringSSL. Its source list is
-  fixed for `BORINGSSL_REV` from versions.env.
-
-- Lightpanda: `patches/lightpanda.patch`.
-
-## Run
-
-```sh
-snitchmd https://paulgraham.com/greatwork.html            # Markdown to stdout
-snitchmd https://paulgraham.com/greatwork.html > page.md  # save it
-snitchmd --json https://paulgraham.com/greatwork.html     # Markdown with metadata
-```
-
-stderr prints a single summary line: title, extraction quality (0–1), character count, and
-`(cached)` on cache hits.
-
-**Exit codes.** `0` success; `1` error (network, browser, invalid option, or bot challenge; message
-on stderr); `2` no main content found (loading shell, wall, or empty page); `22` HTTP status 400 or
-higher.
-
-### Options
-
-Every `lightpanda fetch` option works (`snitchmd help fetch`). Most used:
-
-- `--json`: prints `{url, final_url, title, page_title, page_type, quality, chars, markdown}`.
-
-- `--no-cache`: fetches again instead of answering from the cache.
-
-- `--html-output FILE`: also saves the rendered HTML.
-
-- `--include-images`: keeps image references.
-
-- `--favor-precision`: cuts more boilerplate.
-
-- `--favor-recall`: keeps more content.
-
-- `--dump-selector CSS`: extracts only from the first matching element.
-
-- `--wait-selector CSS`: waits for an element before extracting.
-
-- `--script JS`, `--script-file PATH`: run JS in the page before extracting, e.g. click "Show
-  more".
-
-- `--wait-ms N`: wait cap in ms. Default 30000.
-
-- `--dump-max-bytes N`: cuts the Markdown at N bytes and ends it with `[truncated]`.
-
-- `--http-proxy URL`: proxy.
-
-- `--locale TAG`, `--timezone IANA`: browser locale and time zone.
-
-- `--dump html`: prints the rendered HTML instead of Markdown.
-
-### Cache
-
-A successful Markdown fetch is cached by URL and options. Repeating the command answers from
-disk without opening the page.
-
-- Not cached: errors, and extractions with quality below 0.5 (such as login walls or 200-OK error
-  pages); stderr notes `(not cached: low quality)`.
-- Location: `$SNITCHMD_CACHE_DIR`, or `${XDG_CACHE_HOME:-$HOME/.cache}/snitchmd`.
-- `--json`, `--no-cache`, `--html-output`, and `--dump-max-bytes` do not alter the cache key.
-- `--no-cache` refreshes one URL; `rm -rf ~/.cache/snitchmd` wipes everything.
-
-### Built into the binary
-
-- Safari 27.0 TLS and HTTP/2 fingerprint, Safari User-Agent.
-- Two scripts run in every page (`src/browser/snitchmd/` in `patches/lightpanda.patch`): `safari.js`
-  (Safari JS identity) and `style-index.js` (indexed access to inline styles missing in
-  Lightpanda; prevents crashes on React sites, e.g. Substack).
-- Telemetry is off.
-
-### Not carried over from v1
-
-`--headful` and `--humanize` were Chromium features; Lightpanda has neither.
+- **curl:** `patches/curl.patch` (curl-impersonate, unchanged)
+- **BoringSSL:** `patches/boringssl.patch` (curl-impersonate, unchanged)
+- **boringssl-zig:** `patches/boringssl-zig.patch` (uses local BoringSSL; source list fixed for `BORINGSSL_REV` in `versions.env`)
+- **Lightpanda:** `patches/lightpanda.patch`
