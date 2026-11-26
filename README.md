@@ -4,6 +4,9 @@
   <img alt="snitchmd — Fetch clean Markdown for humans and AI agents, bypassing Cloudflare and JS protection. Single 75 MB binary for macOS and Linux runs locally, without API keys." src="website/hero-light.png" />
 </picture>
 
+  
+---
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="website/curl-vs-snitchmd-dark.png" />
   <source media="(prefers-color-scheme: light)" srcset="website/curl-vs-snitchmd.png" />
