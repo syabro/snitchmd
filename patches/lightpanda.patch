@@ -729,10 +729,21 @@ index 5c0bc2bc801ec053e38bce07b8c63fd5c0a5f03d..fc879e1f3c051b2efc19e024b6d31339
      }
      if (protocols.len > 0) {
 diff --git a/src/cli.zig b/src/cli.zig
-index 2a4adbecdc42f0abd32620d723e08c452ec3a939..3fd0b33cd3591130f72e9d046b2fc758ade95c8a 100644
+index 2a4adbecdc42f0abd32620d723e08c452ec3a939..4a10f1c2bbc6618212fd29121c988b3426f4c295 100644
 --- a/src/cli.zig
 +++ b/src/cli.zig
-@@ -546,21 +546,6 @@ pub fn Builder(comptime commands: anytype) type {
+@@ -469,6 +469,10 @@ pub fn Builder(comptime commands: anytype) type {
+                 }
+             }
+ 
++            if (std.mem.eql(u8, cmd_str, "--full-help")) {
++                if (std.meta.stringToEnum(Enum, "fetch")) |fetch| return .{ exec_name, @unionInit(Union, "help", fetch) };
++            }
++
+             // Help is not in `commands`; so, we have to special case it.
+             if (std.mem.eql(u8, cmd_str, "help")) {
+                 // Check if we're followed by a command name.
+@@ -546,21 +550,6 @@ pub fn Builder(comptime commands: anytype) type {
                  return .fetch;
              }
  
@@ -754,7 +765,7 @@ index 2a4adbecdc42f0abd32620d723e08c452ec3a939..3fd0b33cd3591130f72e9d046b2fc758
              // Serve heuristics.
              inline for (.{
                  "--host",
-@@ -571,7 +556,10 @@ pub fn Builder(comptime commands: anytype) type {
+@@ -571,7 +560,10 @@ pub fn Builder(comptime commands: anytype) type {
                  }
              }
  
@@ -767,10 +778,52 @@ index 2a4adbecdc42f0abd32620d723e08c452ec3a939..3fd0b33cd3591130f72e9d046b2fc758
  
          /// Turns a snake_case string to kebab-case in comptime.
 diff --git a/src/help.zon b/src/help.zon
-index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566f3864059 100644
+index 1ba73157aac2fc060431a9587daa4c77b528e9f4..5d327e200c9398108900837666e212c82d62d52e 100644
 --- a/src/help.zon
 +++ b/src/help.zon
-@@ -101,16 +101,22 @@
+@@ -1,19 +1,28 @@
+ .{
+     //                                                                     MAX_HELP_LEN|
+     .general =
+-    \\usage: {0s} <command> [arguments]
+-    \\
+-    \\The commands are:
+-    \\  agent       starts an interactive AI agent that can browse the web
+-    \\  completion  prints a shell completion script (bash, fish, zsh)
+-    \\  fetch       fetches the specified URL
+-    \\  help        displays this message
+-    \\  mcp         starts an MCP (Model Context Protocol) server (stdio or HTTP)
+-    \\  run         runs a saved script (no LLM), then exits
+-    \\  serve       starts a WebSocket CDP server
+-    \\  version     displays the version of {0s}
+-    \\
+-    \\Use "{0s} help <command>" for more information about a command.
++    \\usage: {0s} <url> [options]
++    \\
++    \\Fetch a page as Markdown.
++    \\
++    \\  --json                           Prints {{url, final_url, title, page_title, page_type,
++    \\                                   quality, chars, markdown}}
++    \\  --no-cache                       Fetches again instead of answering from disk cache
++    \\  --html-output FILE               Also saves the rendered HTML
++    \\  --include-images                 Keeps image references
++    \\  --favor-precision                Cuts more boilerplate
++    \\  --favor-recall                   Keeps more content
++    \\  --dump-selector CSS              Extracts only from the first matching element
++    \\  --wait-selector CSS              Waits for an element before extracting
++    \\  --script JS, --script-file PATH  Runs JS in the page before extracting
++    \\  --wait-ms N                      Wait cap in ms (default 30000)
++    \\  --dump-max-bytes N               Cuts Markdown at N bytes and appends [truncated]
++    \\  --dump html                      Prints rendered HTML instead of Markdown
++    \\
++    \\  --full-help                      Show all fetch options, including Lightpanda flags.
++    \\
++    \\Commands: agent, completion, fetch, help, mcp, run, serve, version.
++    \\Use "{0s} help <command>" for command-specific help.
+     ,
+     .serve =
+     \\usage: {0s} serve [OPTIONS] [COMMON_OPTIONS]
+@@ -101,16 +110,22 @@
      \\          Defaults to no cookie saving.
      \\  --dump <DUMP>
      \\          Dumps the document to stdout.
@@ -797,7 +850,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566
      \\              pdf                Text-only rendering of the page as a
      \\                                 PDF file (base64 with --json).
      \\              png                Text-only rendering of the page as a
-@@ -131,6 +137,16 @@
+@@ -131,6 +146,16 @@
      \\          The dump is still written. Navigation and wait failures exit
      \\          with code 1 regardless of this flag.
      \\          Defaults to false.
@@ -814,7 +867,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566
      \\  --inject-script <EXPR>
      \\          JavaScript to execute as the document's <head> is parsed, before any
      \\          other scripts in the page run. Can be passed multiple times; scripts
-@@ -146,6 +162,9 @@
+@@ -146,6 +171,9 @@
      \\          "error" field: null, or the name of the navigation, wait or
      \\          dump failure for that URL. One failed URL does not stop the
      \\          others; the process exits 1 if any URL failed.
@@ -824,7 +877,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566
      \\  --markdown-alternate
      \\          With --dump markdown, when a page links a markdown version of
      \\          itself (<link rel="alternate" type="text/markdown">), dump that
-@@ -156,10 +175,22 @@
+@@ -156,10 +184,22 @@
      \\          .md files that way). The alternate's URL is logged; with
      \\          --json, "url" is where the markdown came from. The alternate
      \\          loads within what is left of --wait-ms. Defaults to false.
@@ -847,7 +900,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566
      \\  --strip-mode <STRIP>
      \\          Tag group to remove from dump. Can be passed multiple times.
      \\          Defaults to stripping nothing.
-@@ -183,7 +214,7 @@
+@@ -183,7 +223,7 @@
      \\          Defaults to no terminate.
      \\  --wait-ms <INT>
      \\          Wait time in milliseconds. Supersedes all other --wait parameters.
@@ -856,7 +909,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566
      \\  --wait-script <EXPR>
      \\          Wait for a JavaScript expression to return truthy. Checked after
      \\          --wait-until condition is met.
-@@ -209,10 +240,8 @@
+@@ -209,10 +249,8 @@
      \\                                started, ignoring intervals, long timeouts,
      \\                                idle callbacks and WebSocket traffic.
      \\                                Resolves at load when load started nothing.
@@ -869,7 +922,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566
      \\  --with-base
      \\          Add a <base> tag in dump.
      \\          Defaults to false.
-@@ -437,9 +466,8 @@
+@@ -437,9 +475,8 @@
      \\
      \\options:
      \\  --check
@@ -881,7 +934,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566
      ,
      .completion =
      \\usage: {0s} completion <bash | fish | zsh>
-@@ -629,7 +657,7 @@
+@@ -629,7 +666,7 @@
      \\          Allowed values: "pretty", "logfmt".
      \\  --log-level <LEVEL>
      \\          The log level.
@@ -890,7 +943,7 @@ index 1ba73157aac2fc060431a9587daa4c77b528e9f4..01e0a98e3bbe0dd1caa16d8ef45aa566
      \\          Allowed values: "debug", "info", "warn", "error", "fatal".
      \\  --obey-robots
      \\          Fetches and obeys robots.txt of the target page.
-@@ -649,9 +677,9 @@
+@@ -649,9 +686,9 @@
      \\          Time zone used by Date and Intl, e.g. Europe/Paris or UTC.
      \\          Defaults to the host time zone.
      \\  --user-agent <STRING>

@@ -7,9 +7,16 @@ and the project uses [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-11-26
+
 ### Added
 
+- `snitchmd --full-help` lists all fetch options, including Lightpanda flags.
 - Prebuilt binary for macOS x86_64 (Intel), also picked by `install.sh`.
+
+### Changed
+
+- `snitchmd --help` and `-h` show the commonly used Markdown options listed in the README.
 
 ## [2.1.0] — 2026-11-25
 

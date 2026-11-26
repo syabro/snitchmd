@@ -45,24 +45,25 @@ snitchmd mcp
 
 ### Options
 
-Every `lightpanda fetch` option works (`snitchmd help fetch`). Most used:
+`snitchmd --help` shows the most used options:
 
-| Flag | Description |
-| --- | --- |
-| `--json` | Prints `{url, final_url, title, page_title, page_type, quality, chars, markdown}` |
-| `--no-cache` | Fetches again instead of answering from disk cache |
-| `--html-output FILE` | Also saves the rendered HTML |
-| `--include-images` | Keeps image references |
-| `--favor-precision` | Cuts more boilerplate |
-| `--favor-recall` | Keeps more content |
-| `--dump-selector CSS` | Extracts only from the first matching element |
-| `--wait-selector CSS` | Waits for an element before extracting |
-| `--script JS`, `--script-file PATH` | Runs JS in the page before extracting |
-| `--wait-ms N` | Wait cap in ms (default `30000`) |
-| `--dump-max-bytes N` | Cuts Markdown at `N` bytes and appends `[truncated]` |
-| `--http-proxy URL` | HTTP proxy |
-| `--locale TAG`, `--timezone IANA` | Browser locale and time zone |
-| `--dump html` | Prints rendered HTML instead of Markdown |
+```text
+--json                           Prints {url, final_url, title, page_title, page_type,
+                                 quality, chars, markdown}
+--no-cache                       Fetches again instead of answering from disk cache
+--html-output FILE               Also saves the rendered HTML
+--include-images                 Keeps image references
+--favor-precision                Cuts more boilerplate
+--favor-recall                   Keeps more content
+--dump-selector CSS              Extracts only from the first matching element
+--wait-selector CSS              Waits for an element before extracting
+--script JS, --script-file PATH  Runs JS in the page before extracting
+--wait-ms N                      Wait cap in ms (default 30000)
+--dump-max-bytes N               Cuts Markdown at N bytes and appends [truncated]
+--dump html                      Prints rendered HTML instead of Markdown
+```
+
+Run `snitchmd --full-help` to see all fetch options, including Lightpanda flags.
 
 ### Cache
 
