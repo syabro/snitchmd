@@ -553,26 +553,55 @@
     }
 
     /* 3. Usage */
-    .usage-box {
-      width: fit-content;
-      max-width: 100%;
-      margin: 0 auto;
-    }
     .usage-list {
       display: grid;
-      gap: 32px;
+      gap: 64px;
+      margin-top: 8px;
     }
-    .usage-item {
+    .usage-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 40px;
+      align-items: start;
+    }
+    .usage-row--flip .usage-result {
+      order: -1;
+    }
+    .usage-copy,
+    .usage-result {
       min-width: 0;
     }
-    .usage-item .cmd {
-      margin-bottom: 8px;
+    .usage-title {
+      margin: 0 0 8px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.015em;
+      line-height: 1.25;
+      color: var(--ink);
     }
     .usage-desc {
-      margin: 0;
+      margin: 0 0 14px;
       font-size: var(--size-body);
       line-height: 1.5;
       color: var(--ink);
+    }
+    .usage-copy .cmd {
+      margin: 0;
+    }
+    .usage-output {
+      margin: 0;
+      padding: 16px 18px;
+      background: var(--bg-alt);
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: var(--ink);
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .usage-output--wrap {
+      white-space: pre-wrap;
     }
     .install-label code,
     .usage-desc code {
@@ -716,6 +745,16 @@
         height: 44px;
         margin: -10px -10px -10px 0;
       }
+      .usage-list {
+        gap: 40px;
+      }
+      .usage-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .usage-row--flip .usage-result {
+        order: 0;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -857,24 +896,72 @@
 
   <section class="band" aria-label="Usage">
     <div class="container">
-      <div class="usage-box">
-        <h2 class="section-title">Usage</h2>
-        <div class="usage-list">
-          <div class="usage-item">
+      <h2 class="section-title">Usage</h2>
+      <div class="usage-list">
+        <div class="usage-row">
+          <div class="usage-copy">
+            <h3 class="usage-title">Clean Markdown to stdout</h3>
+            <p class="usage-desc">Prints the article body as Markdown to <code>stdout</code> — ready to pipe into an LLM.</p>
             <div class="cmd"><span class="prompt">$ </span>snitchmd https://paulgraham.com/greatwork.html</div>
-            <p class="usage-desc">Prints clean Markdown to <code>stdout</code> — ready to pipe into an LLM.</p>
           </div>
-          <div class="usage-item">
+          <div class="usage-result">
+            <pre class="usage-output usage-output--wrap"><span class="tok-dim">July 2023</span>
+
+If you collected lists of techniques for doing great work in a lot of different fields, what would the intersection look like? I decided to find out by making it.
+
+The first step is to decide what to work on<span class="tok-dim">...</span></pre>
+          </div>
+        </div>
+
+        <div class="usage-row usage-row--flip">
+          <div class="usage-copy">
+            <h3 class="usage-title">Structured JSON</h3>
+            <p class="usage-desc">Returns JSON with title, final URL, quality score, and Markdown for scripts and pipelines.</p>
             <div class="cmd"><span class="prompt">$ </span>snitchmd --json https://paulgraham.com/greatwork.html</div>
-            <p class="usage-desc">Returns JSON with title, final URL, and Markdown for scripts and pipelines.</p>
           </div>
-          <div class="usage-item">
-            <div class="cmd"><span class="prompt">$ </span>snitchmd --dump-selector "table.infobox" https://en.wikipedia.org/wiki/Markdown</div>
+          <div class="usage-result">
+            <pre class="usage-output">{
+  <span class="tok-tag">"url"</span>: "https://paulgraham.com/greatwork.html",
+  <span class="tok-tag">"title"</span>: "How to Do Great Work",
+  <span class="tok-tag">"quality"</span>: 0.7,
+  <span class="tok-tag">"chars"</span>: 133088,
+  <span class="tok-tag">"markdown"</span>: "July 2023\n\nIf you collected lists<span class="tok-dim">..."</span>
+}</pre>
+          </div>
+        </div>
+
+        <div class="usage-row">
+          <div class="usage-copy">
+            <h3 class="usage-title">Target a CSS selector</h3>
             <p class="usage-desc">Extracts only the matching CSS selector — here, the Wikipedia infobox as a Markdown table.</p>
+            <div class="cmd"><span class="prompt">$ </span>snitchmd --dump-selector "table.infobox" https://en.wikipedia.org/wiki/Markdown</div>
           </div>
-          <div class="usage-item">
-            <div class="cmd"><span class="prompt">$ </span>snitchmd mcp</div>
+          <div class="usage-result">
+            <pre class="usage-output">| <span class="tok-bold">Markdown</span>            |                  |
+| ------------------- | ---------------- |
+| Filename extensions | .md, .markdown   |
+| Internet media type | text/markdown    |
+| Developed by        | John Gruber      |
+| Initial release     | March 9, 2004    |
+| Type of format      | Open file format |</pre>
+          </div>
+        </div>
+
+        <div class="usage-row usage-row--flip">
+          <div class="usage-copy">
+            <h3 class="usage-title">Built-in MCP server</h3>
             <p class="usage-desc">Starts an MCP server for Claude Code, Cursor, Codex, and other AI agents.</p>
+            <div class="cmd"><span class="prompt">$ </span>snitchmd mcp</div>
+          </div>
+          <div class="usage-result">
+            <pre class="usage-output">{
+  <span class="tok-tag">"mcpServers"</span>: {
+    <span class="tok-tag">"snitchmd"</span>: {
+      <span class="tok-tag">"command"</span>: "snitchmd",
+      <span class="tok-tag">"args"</span>: ["mcp"]
+    }
+  }
+}</pre>
           </div>
         </div>
       </div>
