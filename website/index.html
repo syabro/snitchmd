@@ -531,14 +531,8 @@
       height: 100%;
       object-fit: contain;
     }
-    .feature-art .art-light {
-      filter: brightness(1.04) contrast(1.06);
-      mix-blend-mode: multiply;
-    }
     .feature-art .art-dark {
       display: none;
-      filter: brightness(0.95) contrast(1.08);
-      mix-blend-mode: lighten;
     }
     :root[data-theme="dark"] .feature-art .art-light {
       display: none;
@@ -744,6 +738,7 @@
       }
       .grid-3 {
         grid-template-columns: 1fr;
+        justify-items: center;
         row-gap: 32px;
       }
       dialog.modal {
